@@ -1,0 +1,55 @@
+# Ejemplo Guía 06 — Deployment que usa ConfigMap y Secret
+# Aplicar: kubectl apply -f configmap.yaml -f secret.yaml -f deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app-con-config
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: app-con-config
+  template:
+    metadata:
+      labels:
+        app: app-con-config
+    spec:
+      containers:
+        - name: app
+          image: busybox:latest
+          command:
+            - sh
+            - -c
+            - |
+              echo "LOG_LEVEL=$LOG_LEVEL, API_URL=$API_URL"
+              echo "DB user from secret: $DB_USER"
+              sleep 3600
+          env:
+            - name: LOG_LEVEL
+              valueFrom:
+                configMapKeyRef:
+                  name: app-config
+                  key: LOG_LEVEL
+            - name: API_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: app-config
+                  key: API_URL
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: db-credentials
+                  key: username
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: db-credentials
+                  key: password
+          volumeMounts:
+            - name: config-file
+              mountPath: /etc/app/config.json
+              subPath: config.json
+      volumes:
+        - name: config-file
+          configMap:
+            name: app-config

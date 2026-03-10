@@ -1,0 +1,19 @@
+{
+  "service": {
+    "name": "mi-api",
+    "port": 8080,
+    "tags": ["curso", "api"],
+    "meta": {
+      "version": "1.0"
+    }
+  },
+  "checks": [
+    {
+      "id": "http-check",
+      "name": "HTTP health",
+      "http": "http://127.0.0.1:8080/health",
+      "interval": "10s",
+      "timeout": "2s"
+    }
+  ]
+}

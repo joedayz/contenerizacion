@@ -1,0 +1,27 @@
+# Ejemplo Guía 02 — Ingress
+# Requiere un Ingress Controller instalado (p. ej. ingress-nginx)
+# Ajustar host según tu entorno (o usar * si el controller lo permite)
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: mi-ingress
+  annotations:
+    # Ejemplo para ingress-nginx (ajustar según tu controller)
+    # nginx.ingress.kubernetes.io/rewrite-target: /
+spec:
+  rules:
+    - host: app.curso.local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: mi-servicio
+                port:
+                  number: 80
+  # Opcional: TLS (descomentar y configurar cuando tengas certificados)
+  # tls:
+  #   - hosts:
+  #       - app.curso.local
+  #     secretName: tls-curso

@@ -1,0 +1,13 @@
+# Ejemplo Guía 06 — ConfigMap (datos NO sensibles)
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-config
+data:
+  LOG_LEVEL: "info"
+  API_URL: "https://api.ejemplo.com"
+  config.json: |
+    {
+      "timeout": 30,
+      "retries": 3
+    }

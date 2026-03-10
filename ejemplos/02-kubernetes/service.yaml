@@ -1,0 +1,14 @@
+# Ejemplo Guía 02 — Service (ClusterIP)
+# Expone el Deployment mi-app dentro del clúster
+apiVersion: v1
+kind: Service
+metadata:
+  name: mi-servicio
+spec:
+  selector:
+    app: mi-app
+  ports:
+    - port: 80
+      targetPort: 80
+      protocol: TCP
+  type: ClusterIP

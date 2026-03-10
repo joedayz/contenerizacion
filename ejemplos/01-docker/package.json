@@ -1,0 +1,6 @@
+{
+  "name": "curso-contenerizacion-app",
+  "version": "1.0.0",
+  "description": "App de ejemplo para Guía 01 - Contenerización y Docker",
+  "main": "server.js"
+}
