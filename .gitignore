@@ -15,3 +15,9 @@ buildNumber.properties
 .project
 # JDT-specific (Eclipse Java Development Tools)
 .classpath
+
+# Archivos personales de planificación (no versionar)
+ENTORNO-CURSO.md
+INICIO-RAPIDO.md
+PLANIFICACION-39-HORAS.md
+SESION-MANANA-3H.md
