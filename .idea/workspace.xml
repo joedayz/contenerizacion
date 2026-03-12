@@ -4,9 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="1ccca462-d708-4343-8d96-e32da063c8f8" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-    </list>
+    <list default="true" id="1ccca462-d708-4343-8d96-e32da063c8f8" name="Changes" comment="" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -78,10 +76,15 @@
 }]]></component>
   <component name="RecapSpentCounter">
     <option name="endsOfQuotaMs" value="1773338466487" />
-    <option name="spentUsd" value="0.02538" />
+    <option name="spentUsd" value="0.034659" />
   </component>
   <component name="RecapUselessUpdatesCounter">
-    <option name="suspendCountdown" value="6" />
+    <option name="suspendCountdown" value="5" />
+  </component>
+  <component name="RecentsManager">
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/docs" />
+    </key>
   </component>
   <component name="SharedIndexes">
     <attachedChunks>
@@ -99,7 +102,7 @@
       <option name="presentableId" value="Default" />
       <updated>1773143160460</updated>
       <workItem from="1773143161983" duration="2000" />
-      <workItem from="1773313408754" duration="5670000" />
+      <workItem from="1773313408754" duration="6367000" />
     </task>
     <servers />
   </component>
