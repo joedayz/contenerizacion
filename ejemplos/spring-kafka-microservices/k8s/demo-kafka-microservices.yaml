@@ -98,7 +98,7 @@ spec:
     spec:
       containers:
         - name: order-service
-          image: piomin/order-service:latest
+          image: sample-spring-kafka-microservices/order-service:1.0-SNAPSHOT
           ports:
             - containerPort: 8080
 ---
@@ -132,7 +132,7 @@ spec:
     spec:
       containers:
         - name: stock-service
-          image: piomin/stock-service:latest
+          image: sample-spring-kafka-microservices/stock-service:1.0-SNAPSHOT
           ports:
             - containerPort: 8081
 ---
