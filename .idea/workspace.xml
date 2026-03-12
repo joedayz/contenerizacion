@@ -1,22 +1,82 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
   <component name="ChangeListManager">
-    <list default="true" id="1ccca462-d708-4343-8d96-e32da063c8f8" name="Changes" comment="" />
+    <list default="true" id="1ccca462-d708-4343-8d96-e32da063c8f8" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/.idea/copilot.data.migration.ask2agent.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ejemplos/02a-kubernetes-local-azure/azure/azure-config.env" beforeDir="false" afterPath="$PROJECT_DIR$/ejemplos/02a-kubernetes-local-azure/azure/azure-config.env" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ejemplos/02a-kubernetes-local-azure/podman/scripts/build-and-load-all.sh" beforeDir="false" afterPath="$PROJECT_DIR$/ejemplos/02a-kubernetes-local-azure/podman/scripts/build-and-load-all.sh" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ejemplos/02b-kubernetes-local-aws/README.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/ejemplos/02b-kubernetes-local-aws/aws/aws-config.env" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/ejemplos/02b-kubernetes-local-aws/aws/aws-setup.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/ejemplos/02b-kubernetes-local-aws/aws/build-and-push-all-aws.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/ejemplos/02b-kubernetes-local-aws/aws/deploy-all-aws.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/ejemplos/02b-kubernetes-local-aws/docker-desktop/README.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/ejemplos/02b-kubernetes-local-aws/docker-desktop/k8s/expenses-all.yaml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/ejemplos/02b-kubernetes-local-aws/docker-desktop/scripts-windows/build-and-load-all.ps1" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/ejemplos/02b-kubernetes-local-aws/docker-desktop/scripts-windows/cluster-up.ps1" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/ejemplos/02b-kubernetes-local-aws/docker-desktop/scripts-windows/deploy-all.ps1" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/ejemplos/02b-kubernetes-local-aws/docker-desktop/scripts-windows/undeploy-all.ps1" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/ejemplos/02b-kubernetes-local-aws/docker-desktop/scripts/build-and-load-all.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/ejemplos/02b-kubernetes-local-aws/docker-desktop/scripts/cluster-up.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/ejemplos/02b-kubernetes-local-aws/docker-desktop/scripts/deploy-all.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/ejemplos/02b-kubernetes-local-aws/docker-desktop/scripts/undeploy-all.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/ejemplos/02b-kubernetes-local-aws/podman/.kind/kind-config.yaml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/ejemplos/02b-kubernetes-local-aws/podman/README.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/ejemplos/02b-kubernetes-local-aws/podman/k8s/expenses-all.yaml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/ejemplos/02b-kubernetes-local-aws/podman/scripts-windows/build-and-load-all.ps1" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/ejemplos/02b-kubernetes-local-aws/podman/scripts-windows/deploy-all-kind.ps1" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/ejemplos/02b-kubernetes-local-aws/podman/scripts-windows/kind-up.ps1" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/ejemplos/02b-kubernetes-local-aws/podman/scripts-windows/undeploy-all-kind.ps1" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/ejemplos/02b-kubernetes-local-aws/podman/scripts/build-and-load-all.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/ejemplos/02b-kubernetes-local-aws/podman/scripts/deploy-all-kind.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/ejemplos/02b-kubernetes-local-aws/podman/scripts/kind-up.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/ejemplos/02b-kubernetes-local-aws/podman/scripts/undeploy-all-kind.sh" beforeDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
     <option name="LAST_RESOLUTION" value="IGNORE" />
   </component>
+  <component name="CopilotPersistence">
+    <persistenceIdMap>
+      <entry key="_/Users/josediaz/Projects/JoeDayz/contenerizacion" value="3AkiqUxb5LvlcjXcEMjgjcadOB8" />
+    </persistenceIdMap>
+  </component>
+  <component name="EmbeddingIndexingInfo">
+    <option name="cachedIndexableFilesCount" value="672" />
+    <option name="fileBasedEmbeddingIndicesEnabled" value="true" />
+  </component>
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
+  <component name="GitHubPullRequestSearchHistory"><![CDATA[{
+  "lastFilter": {
+    "state": "OPEN",
+    "assignee": "joedayz"
+  }
+}]]></component>
+  <component name="GithubPullRequestsUISettings"><![CDATA[{
+  "selectedUrlAndAccountId": {
+    "url": "https://github.com/joedayz/contenerizacion.git",
+    "accountId": "8ace74dd-f648-466f-b126-a32d5e0f48c1"
+  }
+}]]></component>
+  <component name="KubernetesApiPersistence"><![CDATA[{}]]></component>
+  <component name="KubernetesApiProvider"><![CDATA[{
+  "isMigrated": true
+}]]></component>
   <component name="McpProjectServerCommands">
     <commands />
     <urls />
   </component>
-  <component name="ProjectColorInfo"><![CDATA[{
-  "associatedIndex": 0
-}]]></component>
+  <component name="ProjectColorInfo">{
+  &quot;associatedIndex&quot;: 0
+}</component>
   <component name="ProjectId" id="3AkiqUxb5LvlcjXcEMjgjcadOB8" />
   <component name="ProjectViewState">
     <option name="hideEmptyMiddlePackages" value="true" />
@@ -27,17 +87,32 @@
     "ModuleVcsDetector.initialDetectionPerformed": "true",
     "RunOnceActivity.MCP Project settings loaded": "true",
     "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
+    "RunOnceActivity.git.unshallow": "true",
     "RunOnceActivity.typescript.service.memoryLimit.init": "true",
+    "SHARE_PROJECT_CONFIGURATION_FILES": "true",
     "com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1": "true",
     "git-widget-placeholder": "main",
     "junie.onboarding.icon.badge.shown": "true",
+    "kotlin-language-version-configured": "true",
     "last_opened_file_path": "/Users/josediaz/Projects/JoeDayz/contenerizacion",
+    "node.js.detected.package.eslint": "true",
+    "node.js.detected.package.tslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.tslint": "(autodetect)",
     "nodejs_package_manager_path": "npm",
     "settings.editor.selected.configurable": "preferences.lookFeel",
     "to.speed.mode.migration.done": "true",
     "vue.rearranger.settings.migration": "true"
   }
 }]]></component>
+  <component name="RecapSpentCounter">
+    <option name="endsOfQuotaMs" value="1773338466487" />
+    <option name="spentUsd" value="0.00484775" />
+  </component>
+  <component name="RecapUselessUpdatesCounter">
+    <option name="suspendCountdown" value="8" />
+  </component>
   <component name="SharedIndexes">
     <attachedChunks>
       <set>
@@ -54,8 +129,12 @@
       <option name="presentableId" value="Default" />
       <updated>1773143160460</updated>
       <workItem from="1773143161983" duration="2000" />
+      <workItem from="1773313408754" duration="3441000" />
     </task>
     <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
   </component>
   <component name="github-copilot-workspace">
     <instructionFileLocations>

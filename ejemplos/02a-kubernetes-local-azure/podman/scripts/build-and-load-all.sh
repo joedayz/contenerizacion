@@ -33,5 +33,3 @@ build_and_load expense-service expense-service src/main/docker/Dockerfile.jvm
 build_and_load expense-client expense-client src/main/docker/Dockerfile.jvm
 
 echo "All images loaded."
-
-
