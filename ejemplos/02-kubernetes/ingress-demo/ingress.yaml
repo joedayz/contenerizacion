@@ -9,8 +9,9 @@ metadata:
     # Ejemplo para ingress-nginx (ajustar según tu controller)
     # nginx.ingress.kubernetes.io/rewrite-target: /
 spec:
+  ingressClassName: nginx
   rules:
-    - host: app.curso.local
+    - host: app.localtest.me
       http:
         paths:
           - path: /

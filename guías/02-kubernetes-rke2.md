@@ -141,12 +141,12 @@ Desde la raíz del repo del curso:
 
 ```bash
 # Deployment
-kubectl apply -f ejemplos/02-kubernetes/deployment.yaml -n curso-local
+kubectl apply -f ejemplos/02-kubernetes/ingress-demo/deployment.yaml -n curso-local
 kubectl get deployments -n curso-local
 kubectl get pods -n curso-local
 
 # Service
-kubectl apply -f ejemplos/02-kubernetes/service.yaml -n curso-local
+kubectl apply -f ejemplos/02-kubernetes/ingress-demo/service.yaml -n curso-local
 kubectl get svc -n curso-local
 ```
 
@@ -166,7 +166,7 @@ Para acceder a la aplicación:
   - Volver a aplicar y mirar el `NODE-PORT`:
 
   ```bash
-  kubectl apply -f ejemplos/02-kubernetes/service.yaml -n curso-local
+  kubectl apply -f ejemplos/02-kubernetes/ingress-demo/service.yaml -n curso-local
   kubectl get svc mi-servicio -n curso-local
   ```
 
@@ -188,7 +188,7 @@ Si Docker Desktop tiene un Ingress Controller habilitado:
 2. Aplicar:
 
    ```bash
-   kubectl apply -f ejemplos/02-kubernetes/ingress.yaml -n curso-local
+   kubectl apply -f ejemplos/02-kubernetes/ingress-demo/ingress.yaml -n curso-local
    kubectl get ingress -n curso-local
    ```
 
@@ -199,9 +199,9 @@ Si Docker Desktop tiene un Ingress Controller habilitado:
 Para borrar solo los recursos del ejemplo:
 
 ```bash
-kubectl delete -f ejemplos/02-kubernetes/ingress.yaml -n curso-local
-kubectl delete -f ejemplos/02-kubernetes/service.yaml -n curso-local
-kubectl delete -f ejemplos/02-kubernetes/deployment.yaml -n curso-local
+kubectl delete -f ejemplos/02-kubernetes/ingress-demo/ingress.yaml -n curso-local
+kubectl delete -f ejemplos/02-kubernetes/ingress-demo/service.yaml -n curso-local
+kubectl delete -f ejemplos/02-kubernetes/ingress-demo/deployment.yaml -n curso-local
 ```
 
 Para borrar el namespace completo:
