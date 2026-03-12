@@ -3,7 +3,7 @@
 ## Orden de aplicación
 
 ```bash
-kubectl apply -f deployment.yaml
+kubectl apply -f demo-kafka-microservices.yaml
 kubectl apply -f service.yaml
 kubectl apply -f ingress.yaml
 ```

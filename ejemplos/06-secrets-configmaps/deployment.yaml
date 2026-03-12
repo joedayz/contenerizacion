@@ -1,5 +1,5 @@
 # Ejemplo Guía 06 — Deployment que usa ConfigMap y Secret
-# Aplicar: kubectl apply -f configmap.yaml -f secret.yaml -f deployment.yaml
+# Aplicar: kubectl apply -f configmap.yaml -f secret.yaml -f demo-kafka-microservices.yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:

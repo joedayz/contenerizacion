@@ -1,5 +1,5 @@
 # Ejemplo Guía 02 — Deployment en Kubernetes (RKE2)
-# Ejecutar: kubectl apply -f deployment.yaml
+# Ejecutar: kubectl apply -f demo-kafka-microservices.yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:

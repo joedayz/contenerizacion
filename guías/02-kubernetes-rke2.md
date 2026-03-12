@@ -141,7 +141,7 @@ Desde la raíz del repo del curso:
 
 ```bash
 # Deployment
-kubectl apply -f ejemplos/02-kubernetes/ingress-demo/deployment.yaml -n curso-local
+kubectl apply -f ejemplos/02-kubernetes/ingress-demo/demo-kafka-microservices.yaml -n curso-local
 kubectl get deployments -n curso-local
 kubectl get pods -n curso-local
 
@@ -201,7 +201,7 @@ Para borrar solo los recursos del ejemplo:
 ```bash
 kubectl delete -f ejemplos/02-kubernetes/ingress-demo/ingress.yaml -n curso-local
 kubectl delete -f ejemplos/02-kubernetes/ingress-demo/service.yaml -n curso-local
-kubectl delete -f ejemplos/02-kubernetes/ingress-demo/deployment.yaml -n curso-local
+kubectl delete -f ejemplos/02-kubernetes/ingress-demo/demo-kafka-microservices.yaml -n curso-local
 ```
 
 Para borrar el namespace completo:

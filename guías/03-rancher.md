@@ -102,7 +102,7 @@ Los ejemplos de la carpeta `ejemplos/02-kubernetes/` y `ejemplos/03-rancher/` se
    Desde la raíz del repo del curso:
 
    ```bash
-   kubectl apply -f ejemplos/02-kubernetes/deployment.yaml -n curso-rancher
+   kubectl apply -f ejemplos/02-kubernetes/demo-kafka-microservices.yaml -n curso-rancher
    kubectl apply -f ejemplos/02-kubernetes/service.yaml -n curso-rancher
    kubectl apply -f ejemplos/02-kubernetes/ingress.yaml -n curso-rancher   # si el clúster tiene Ingress Controller
    ```
