@@ -1,0 +1,14 @@
+server:
+  dataStorage:
+    enabled: false      # sin PVC, los datos se pierden si se borra el pod
+  dev:
+    enabled: true       # modo dev: un solo nodo, token raíz fijo
+  service:
+    type: ClusterIP     # lo expondremos con port-forward
+  readinessProbe:
+    enabled: false
+  livenessProbe:
+    enabled: false
+Injector:
+  enabled: true         # habilita el Vault Agent Injector (sidecar)
+  externalVaultAddr: "http://vault.vault.svc.cluster.local:8200"
