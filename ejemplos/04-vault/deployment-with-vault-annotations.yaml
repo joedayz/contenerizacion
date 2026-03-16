@@ -31,11 +31,3 @@ spec:
         - name: app
           image: busybox:latest
           command: ["sh", "-c", "source /vault/secrets/db && echo Usuario: $DB_USERNAME && sleep 3600"]
-          volumeMounts:
-            - name: vault-secrets
-              mountPath: /vault/secrets
-              readOnly: true
-      volumes:
-        - name: vault-secrets
-          emptyDir:
-            medium: Memory

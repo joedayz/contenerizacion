@@ -5,18 +5,7 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="1ccca462-d708-4343-8d96-e32da063c8f8" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/AGENTS.md" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/ejemplos/04-vault/quarkus-vault-demo/README.md" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/ejemplos/04-vault/quarkus-vault-demo/k8s/vault-quarkus-demo.yaml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/ejemplos/04-vault/quarkus-vault-demo/pom.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/ejemplos/04-vault/quarkus-vault-demo/src/main/docker/Dockerfile.jvm" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/ejemplos/04-vault/quarkus-vault-demo/src/main/java/com/bcp/training/vault/SecretFileLoader.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/ejemplos/04-vault/quarkus-vault-demo/src/main/java/com/bcp/training/vault/SecretResource.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/ejemplos/04-vault/quarkus-vault-demo/src/main/resources/application.properties" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/ejemplos/04-vault/quarkus-vault-demo/src/test/java/com/bcp/training/vault/SecretFileLoaderTest.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/ejemplos/04-vault/quarkus-vault-demo/src/test/resources/vault-db.env" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ejemplos/04-vault/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/ejemplos/04-vault/README.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ejemplos/04-vault/deployment-with-vault-annotations.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/ejemplos/04-vault/deployment-with-vault-annotations.yaml" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -38,7 +27,7 @@
     </selectedModels>
   </component>
   <component name="EmbeddingIndexingInfo">
-    <option name="cachedIndexableFilesCount" value="703" />
+    <option name="cachedIndexableFilesCount" value="728" />
     <option name="fileBasedEmbeddingIndicesEnabled" value="true" />
   </component>
   <component name="Git.Settings">
@@ -75,36 +64,36 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "ModuleVcsDetector.initialDetectionPerformed": "true",
-    "RunOnceActivity.MCP Project settings loaded": "true",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
-    "RunOnceActivity.git.unshallow": "true",
-    "RunOnceActivity.typescript.service.memoryLimit.init": "true",
-    "SHARE_PROJECT_CONFIGURATION_FILES": "true",
-    "com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1": "true",
-    "git-widget-placeholder": "main",
-    "junie.onboarding.icon.badge.shown": "true",
-    "kotlin-language-version-configured": "true",
-    "last_opened_file_path": "/Users/josediaz/Projects/JoeDayz/contenerizacion",
-    "node.js.detected.package.eslint": "true",
-    "node.js.detected.package.tslint": "true",
-    "node.js.selected.package.eslint": "(autodetect)",
-    "node.js.selected.package.tslint": "(autodetect)",
-    "nodejs_package_manager_path": "npm",
-    "settings.editor.selected.configurable": "preferences.lookFeel",
-    "to.speed.mode.migration.done": "true",
-    "vue.rearranger.settings.migration": "true"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.MCP Project settings loaded&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.typescript.service.memoryLimit.init&quot;: &quot;true&quot;,
+    &quot;SHARE_PROJECT_CONFIGURATION_FILES&quot;: &quot;true&quot;,
+    &quot;com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
+    &quot;junie.onboarding.icon.badge.shown&quot;: &quot;true&quot;,
+    &quot;kotlin-language-version-configured&quot;: &quot;true&quot;,
+    &quot;last_opened_file_path&quot;: &quot;/Users/josediaz/Projects/JoeDayz/contenerizacion&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;preferences.lookFeel&quot;,
+    &quot;to.speed.mode.migration.done&quot;: &quot;true&quot;,
+    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
   }
-}]]></component>
+}</component>
   <component name="RecapSpentCounter">
     <option name="endsOfQuotaMs" value="1775930540224" />
     <option name="spentUsd" value="0.00770725" />
   </component>
   <component name="RecapUselessUpdatesCounter">
-    <option name="suspendCountdown" value="1" />
+    <option name="suspendCountdown" value="0" />
   </component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
@@ -132,6 +121,7 @@
       <workItem from="1773143161983" duration="2000" />
       <workItem from="1773313408754" duration="8614000" />
       <workItem from="1773638950106" duration="2372000" />
+      <workItem from="1773657411278" duration="4081000" />
     </task>
     <servers />
   </component>
