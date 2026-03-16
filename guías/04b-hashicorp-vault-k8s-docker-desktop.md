@@ -109,16 +109,18 @@ Mientras este comando esté corriendo, Vault será accesible en:
 
 ## 6. Obtener el token raíz (root token)
 
-En modo dev, Vault genera un **root token** que aparece en los logs del pod.
+En modo dev, Vault genera un **root token** y lo expone en la variable de entorno `VAULT_DEV_ROOT_TOKEN_ID` dentro del pod.
+
+La forma más sencilla y compatible de obtenerlo es:
 
 ```bash
-kubectl -n vault logs statefulset/vault | head
+kubectl -n vault exec -it vault-0 -- sh -c 'echo $VAULT_DEV_ROOT_TOKEN_ID'
 ```
 
-En la salida verás una línea similar a:
+La salida será algo como:
 
 ```text
-Root Token: s.XXXXXXXXXXXXXXXXXXXX
+s.XXXXXXXXXXXXXXXXXXXX
 ```
 
 Ese valor (`s.XXX...`) es el `VAULT_TOKEN` que usaremos para las prácticas.
