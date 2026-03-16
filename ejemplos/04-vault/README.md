@@ -23,10 +23,25 @@ El archivo `deployment-with-vault-annotations.yaml` muestra las anotaciones típ
 
 ### Pasos rápidos para probarlo
 
-1. **Crear el secreto en Vault** (usando el KV en `secret/`):
+1. **Crear el secreto y el role en Vault** (usando el KV en `secret/`):
 
    ```bash
+   # Asumiendo que ya tienes VAULT_ADDR y VAULT_TOKEN configurados
    vault kv put secret/mi-app/db username="appuser" password="changeme"
+
+   # Policy con permiso de lectura sobre ese secreto
+   vault policy write mi-app-policy - <<EOF
+   path "secret/data/mi-app/db" {
+     capabilities = ["read"]
+   }
+   EOF
+
+   # Role de Kubernetes que usará el Deployment (ServiceAccount default en namespace default)
+   vault write auth/kubernetes/role/mi-app \
+     bound_service_account_names=default \
+     bound_service_account_namespaces=default \
+     policies=mi-app-policy \
+     ttl=1h
    ```
 
 2. **Aplicar el Deployment**:
