@@ -36,7 +36,7 @@ spec:
         runAsNonRoot: true
       containers:
       - name: app
-        image: vault-quarkus-demo:latest
+        image: localhost/vault-quarkus-demo:latest
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 8080

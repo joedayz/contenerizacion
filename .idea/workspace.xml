@@ -7,7 +7,6 @@
     <list default="true" id="1ccca462-d708-4343-8d96-e32da063c8f8" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/ejemplos/04-vault/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/ejemplos/04-vault/README.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ejemplos/04-vault/deployment-with-vault-annotations.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/ejemplos/04-vault/deployment-with-vault-annotations.yaml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/ejemplos/04-vault/quarkus-vault-demo/k8s/vault-quarkus-demo.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/ejemplos/04-vault/quarkus-vault-demo/k8s/vault-quarkus-demo.yaml" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -124,7 +123,7 @@
       <workItem from="1773143161983" duration="2000" />
       <workItem from="1773313408754" duration="8614000" />
       <workItem from="1773638950106" duration="2372000" />
-      <workItem from="1773657411278" duration="7092000" />
+      <workItem from="1773657411278" duration="9207000" />
     </task>
     <servers />
   </component>

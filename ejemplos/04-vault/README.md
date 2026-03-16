@@ -98,13 +98,54 @@ Proyecto: `quarkus-vault-demo/`
 - Lee secretos desde `/vault/secrets/db` (archivo creado por Vault Agent Injector)
 - No expone la password completa (solo longitud)
 
-Flujo Linux/macOS:
+### 3.1. Construir y cargar la imagen de Quarkus
+
+#### Caso A: Kubernetes de Docker Desktop (sin kind, usando Docker como runtime)
 
 ```bash
 cd quarkus-vault-demo
 mvn clean package
 docker build -f src/main/docker/Dockerfile.jvm -t vault-quarkus-demo:latest .
+
 kubectl apply -f k8s/vault-quarkus-demo.yaml
+kubectl get pods -l app=vault-quarkus-demo
+```
+
+En este caso, el clúster usa el mismo daemon de Docker Desktop y encuentra la imagen local `vault-quarkus-demo:latest` **sin pasos adicionales**.  
+No es necesario hacer `kind load docker-image` ni subir la imagen a un registry.
+
+#### Caso B: clúster kind (por ejemplo `microservices`)
+
+- **Linux / macOS con Podman**: usa el script `.sh`:
+
+  ```bash
+  cd ejemplos/04-vault
+  chmod +x scripts/build-and-load-vault-quarkus-demo.sh
+  CLUSTER_NAME=microservices ./scripts/build-and-load-vault-quarkus-demo.sh
+  ```
+
+- **Windows con Docker Desktop**: usa el script `.ps1` en PowerShell:
+
+  ```powershell
+  cd ejemplos/04-vault
+  ./scripts/build-and-load-vault-quarkus-demo.ps1 -ClusterName microservices
+  ```
+
+Después de ejecutar el script (en cualquiera de los casos):
+
+```bash
+kubectl apply -f quarkus-vault-demo/k8s/vault-quarkus-demo.yaml
+kubectl get pods -l app=vault-quarkus-demo
+```
+
+> Nota: cuando usas **kind**, el clúster tiene su propio daemon interno.  
+> Estos scripts se encargan de construir la imagen localmente y hacer `kind load` para que quede disponible dentro del clúster.
+
+### 3.2. Probar el endpoint
+
+Flujo Linux/macOS:
+
+```bash
 kubectl port-forward svc/vault-quarkus-demo 8082:8080
 curl http://localhost:8082/vault-demo/secret
 ```
@@ -112,10 +153,6 @@ curl http://localhost:8082/vault-demo/secret
 Flujo PowerShell:
 
 ```powershell
-cd quarkus-vault-demo
-mvn clean package
-docker build -f src/main/docker/Dockerfile.jvm -t vault-quarkus-demo:latest .
-kubectl apply -f k8s/vault-quarkus-demo.yaml
 kubectl port-forward svc/vault-quarkus-demo 8082:8080
 curl http://localhost:8082/vault-demo/secret
 ```
