@@ -23,7 +23,7 @@ El archivo `deployment-with-vault-annotations.yaml` muestra las anotaciones típ
 
 ### Pasos rápidos para probarlo
 
-1. **Habilitar Kubernetes auth, configurarlo y crear el secreto/role en Vault** (usando el KV en `secret/`):
+1. **Habilitar Kubernetes auth, configurarlo y crear el secreto/roles en Vault** (usando el KV en `secret/`):
 
    ```bash
    # Asumiendo que ya tienes VAULT_ADDR y VAULT_TOKEN configurados
@@ -51,9 +51,15 @@ El archivo `deployment-with-vault-annotations.yaml` muestra las anotaciones típ
    }
    EOF
 
-   # 5. Role de Kubernetes que usará el Deployment (ServiceAccount default en namespace default)
-   vault write auth/kubernetes/role/mi-app \
+   # 5. Role de Kubernetes para el deployment app-con-vault (ServiceAccount default / namespace default)
+   vault write auth/kubernetes/role/app-con-vault-role \
      bound_service_account_names=default \
+     bound_service_account_namespaces=default \
+     policies=mi-app-policy \
+     ttl=1h
+   # 6. Role de Kubernetes para el deployment vault-quarkus-demo (ServiceAccount vault-quarkus-demo / namespace default)
+   vault write auth/kubernetes/role/vault-quarkus-demo-role \
+     bound_service_account_names=vault-quarkus-demo \
      bound_service_account_namespaces=default \
      policies=mi-app-policy \
      ttl=1h

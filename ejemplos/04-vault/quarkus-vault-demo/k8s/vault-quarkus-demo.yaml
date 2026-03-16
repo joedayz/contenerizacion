@@ -20,7 +20,8 @@ spec:
         app: vault-quarkus-demo
       annotations:
         vault.hashicorp.com/agent-inject: "true"
-        vault.hashicorp.com/role: "mi-app"
+        # Rol específico para esta app (ServiceAccount vault-quarkus-demo / namespace default)
+        vault.hashicorp.com/role: "vault-quarkus-demo-role"
         vault.hashicorp.com/agent-inject-secret-db: "secret/data/mi-app/db"
         vault.hashicorp.com/agent-inject-template-db: |
           {{- with secret "secret/data/mi-app/db" -}}
