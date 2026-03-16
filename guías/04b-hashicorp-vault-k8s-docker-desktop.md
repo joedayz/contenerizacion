@@ -135,14 +135,30 @@ Ese valor (`s.XXX...`) es el `VAULT_TOKEN` que usaremos para las prácticas.
 > kubectl -n vault port-forward svc/vault 8200:8200
 > ```
 
-Si tienes el binario de Vault instalado localmente (por ejemplo con Homebrew en macOS o con Chocolatey en Windows), configura estas variables de entorno en la terminal donde lo vayas a usar:
+Si tienes el binario de Vault instalado localmente (por ejemplo con Homebrew en macOS o con Chocolatey en Windows), configura las variables de entorno según tu shell.
+
+### 7.1. Bash / Zsh (macOS, Linux, Git Bash)
 
 ```bash
 export VAULT_ADDR=http://127.0.0.1:8200
 export VAULT_TOKEN=<TU_ROOT_TOKEN_AQUI>
 ```
 
-Ejemplo de prueba:
+### 7.2. PowerShell (Windows)
+
+```powershell
+$env:VAULT_ADDR = "http://127.0.0.1:8200"
+$env:VAULT_TOKEN = "<TU_ROOT_TOKEN_AQUI>"
+```
+
+### 7.3. CMD clásico (Windows)
+
+```bat
+set VAULT_ADDR=http://127.0.0.1:8200
+set VAULT_TOKEN=<TU_ROOT_TOKEN_AQUI>
+```
+
+Ejemplo de prueba (en cualquier shell):
 
 ```bash
 vault status
