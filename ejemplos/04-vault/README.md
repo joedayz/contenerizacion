@@ -23,7 +23,7 @@ El archivo `deployment-with-vault-annotations.yaml` muestra las anotaciones típ
 
 ### Pasos rápidos para probarlo
 
-1. **Habilitar Kubernetes auth y crear el secreto/role en Vault** (usando el KV en `secret/`):
+1. **Habilitar Kubernetes auth, configurarlo y crear el secreto/role en Vault** (usando el KV en `secret/`):
 
    ```bash
    # Asumiendo que ya tienes VAULT_ADDR y VAULT_TOKEN configurados
@@ -31,17 +31,27 @@ El archivo `deployment-with-vault-annotations.yaml` muestra las anotaciones típ
    # 1. Habilitar el método de autenticación Kubernetes (solo una vez)
    vault auth enable kubernetes
 
-   # 2. Crear el secreto de ejemplo
+   # 2. Configurar el método de autenticación Kubernetes
+   #    Como Vault corre dentro del clúster, usamos el servicio interno del API server
+   kubectl -n vault exec vault-0 -- cat /var/run/secrets/kubernetes.io/serviceaccount/ca.crt > ca.crt
+   SA_TOKEN=$(kubectl -n vault exec vault-0 -- cat /var/run/secrets/kubernetes.io/serviceaccount/token)
+
+   vault write auth/kubernetes/config \
+     token_reviewer_jwt="$SA_TOKEN" \
+     kubernetes_host="https://kubernetes.default.svc:443" \
+     kubernetes_ca_cert=@ca.crt
+
+   # 3. Crear el secreto de ejemplo
    vault kv put secret/mi-app/db username="appuser" password="changeme"
 
-   # 3. Policy con permiso de lectura sobre ese secreto
+   # 4. Policy con permiso de lectura sobre ese secreto
    vault policy write mi-app-policy - <<EOF
    path "secret/data/mi-app/db" {
      capabilities = ["read"]
    }
    EOF
 
-   # 4. Role de Kubernetes que usará el Deployment (ServiceAccount default en namespace default)
+   # 5. Role de Kubernetes que usará el Deployment (ServiceAccount default en namespace default)
    vault write auth/kubernetes/role/mi-app \
      bound_service_account_names=default \
      bound_service_account_namespaces=default \
