@@ -1,0 +1,76 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: vault-quarkus-demo
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vault-quarkus-demo
+  labels:
+    app: vault-quarkus-demo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: vault-quarkus-demo
+  template:
+    metadata:
+      labels:
+        app: vault-quarkus-demo
+      annotations:
+        vault.hashicorp.com/agent-inject: "true"
+        vault.hashicorp.com/role: "mi-app"
+        vault.hashicorp.com/agent-inject-secret-db: "secret/data/mi-app/db"
+        vault.hashicorp.com/agent-inject-template-db: |
+          {{- with secret "secret/data/mi-app/db" -}}
+          export DB_USERNAME="{{ .Data.data.username }}"
+          export DB_PASSWORD="{{ .Data.data.password }}"
+          {{- end -}}
+    spec:
+      serviceAccountName: vault-quarkus-demo
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
+        runAsNonRoot: true
+      containers:
+      - name: app
+        image: vault-quarkus-demo:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8080
+        env:
+        - name: VAULT_SECRET_FILE
+          value: /vault/secrets/db
+        livenessProbe:
+          httpGet:
+            path: /q/health/live
+            port: 8080
+          initialDelaySeconds: 25
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /q/health/ready
+            port: 8080
+          initialDelaySeconds: 10
+          periodSeconds: 5
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: vault-quarkus-demo
+  labels:
+    app: vault-quarkus-demo
+spec:
+  selector:
+    app: vault-quarkus-demo
+  ports:
+  - name: http
+    port: 8080
+    targetPort: 8080
+

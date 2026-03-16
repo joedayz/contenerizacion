@@ -2,6 +2,11 @@
 
 Estos archivos son **referencia** para integrar Vault con Kubernetes. Requieren Vault y (opcionalmente) Vault Agent Injector instalados en el clúster.
 
+## Contenido de esta carpeta
+
+- `deployment-with-vault-annotations.yaml`: ejemplo base con BusyBox para entender el injector.
+- `quarkus-vault-demo/`: demo runnable de Quarkus que consume secretos inyectados por Vault.
+
 ## 1. Configuración en Vault (resumen)
 
 - Habilitar **Kubernetes auth method** y configurarlo con la URL del API server de K8s y un token de servicio con permisos para verificar JWTs.
@@ -15,6 +20,38 @@ Estos archivos son **referencia** para integrar Vault con Kubernetes. Requieren 
 ## 2. Ejemplo de Deployment con anotaciones (Vault Agent Injector)
 
 El archivo `deployment-with-vault-annotations.yaml` muestra las anotaciones típicas para inyectar secretos de Vault en el Pod. El injector añade un sidecar que escribe los secretos en un volumen compartido.
+
+## 3. Integración Quarkus + Vault (demo lista para clase)
+
+Proyecto: `quarkus-vault-demo/`
+
+- Endpoint de prueba: `GET /vault-demo/secret`
+- Lee secretos desde `/vault/secrets/db` (archivo creado por Vault Agent Injector)
+- No expone la password completa (solo longitud)
+
+Flujo Linux/macOS:
+
+```bash
+cd quarkus-vault-demo
+mvn clean package
+docker build -f src/main/docker/Dockerfile.jvm -t vault-quarkus-demo:latest .
+kubectl apply -f k8s/vault-quarkus-demo.yaml
+kubectl port-forward svc/vault-quarkus-demo 8082:8080
+curl http://localhost:8082/vault-demo/secret
+```
+
+Flujo PowerShell:
+
+```powershell
+cd quarkus-vault-demo
+mvn clean package
+docker build -f src/main/docker/Dockerfile.jvm -t vault-quarkus-demo:latest .
+kubectl apply -f k8s/vault-quarkus-demo.yaml
+kubectl port-forward svc/vault-quarkus-demo 8082:8080
+curl http://localhost:8082/vault-demo/secret
+```
+
+Ver detalle del demo en `quarkus-vault-demo/README.md`.
 
 ## Comandos útiles (en un entorno con Vault CLI)
 

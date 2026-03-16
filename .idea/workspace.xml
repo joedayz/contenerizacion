@@ -4,7 +4,20 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="1ccca462-d708-4343-8d96-e32da063c8f8" name="Changes" comment="" />
+    <list default="true" id="1ccca462-d708-4343-8d96-e32da063c8f8" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/AGENTS.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/ejemplos/04-vault/quarkus-vault-demo/README.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/ejemplos/04-vault/quarkus-vault-demo/k8s/vault-quarkus-demo.yaml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/ejemplos/04-vault/quarkus-vault-demo/pom.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/ejemplos/04-vault/quarkus-vault-demo/src/main/docker/Dockerfile.jvm" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/ejemplos/04-vault/quarkus-vault-demo/src/main/java/com/bcp/training/vault/SecretFileLoader.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/ejemplos/04-vault/quarkus-vault-demo/src/main/java/com/bcp/training/vault/SecretResource.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/ejemplos/04-vault/quarkus-vault-demo/src/main/resources/application.properties" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/ejemplos/04-vault/quarkus-vault-demo/src/test/java/com/bcp/training/vault/SecretFileLoaderTest.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/ejemplos/04-vault/quarkus-vault-demo/src/test/resources/vault-db.env" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ejemplos/04-vault/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/ejemplos/04-vault/README.md" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -15,29 +28,38 @@
       <entry key="_/Users/josediaz/Projects/JoeDayz/contenerizacion" value="3AkiqUxb5LvlcjXcEMjgjcadOB8" />
     </persistenceIdMap>
   </component>
+  <component name="CopilotUserSelectedChatMode">
+    <option name="chatModeId" value="Agent" />
+  </component>
+  <component name="CopilotUserSelectedModel">
+    <selectedModels>
+      <entry key="chat-panel" value="Claude Opus 4.6" />
+      <entry key="agent-panel" value="Claude Opus 4.6" />
+    </selectedModels>
+  </component>
   <component name="EmbeddingIndexingInfo">
-    <option name="cachedIndexableFilesCount" value="672" />
+    <option name="cachedIndexableFilesCount" value="703" />
     <option name="fileBasedEmbeddingIndicesEnabled" value="true" />
   </component>
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
-  <component name="GitHubPullRequestSearchHistory"><![CDATA[{
-  "lastFilter": {
-    "state": "OPEN",
-    "assignee": "joedayz"
+  <component name="GitHubPullRequestSearchHistory">{
+  &quot;lastFilter&quot;: {
+    &quot;state&quot;: &quot;OPEN&quot;,
+    &quot;assignee&quot;: &quot;joedayz&quot;
   }
-}]]></component>
-  <component name="GithubPullRequestsUISettings"><![CDATA[{
-  "selectedUrlAndAccountId": {
-    "url": "https://github.com/joedayz/contenerizacion.git",
-    "accountId": "8ace74dd-f648-466f-b126-a32d5e0f48c1"
+}</component>
+  <component name="GithubPullRequestsUISettings">{
+  &quot;selectedUrlAndAccountId&quot;: {
+    &quot;url&quot;: &quot;https://github.com/joedayz/contenerizacion.git&quot;,
+    &quot;accountId&quot;: &quot;8ace74dd-f648-466f-b126-a32d5e0f48c1&quot;
   }
-}]]></component>
-  <component name="KubernetesApiPersistence"><![CDATA[{}]]></component>
-  <component name="KubernetesApiProvider"><![CDATA[{
-  "isMigrated": true
-}]]></component>
+}</component>
+  <component name="KubernetesApiPersistence">{}</component>
+  <component name="KubernetesApiProvider">{
+  &quot;isMigrated&quot;: true
+}</component>
   <component name="McpProjectServerCommands">
     <commands />
     <urls />
@@ -46,6 +68,9 @@
   &quot;associatedIndex&quot;: 0
 }</component>
   <component name="ProjectId" id="3AkiqUxb5LvlcjXcEMjgjcadOB8" />
+  <component name="ProjectLevelVcsManager">
+    <ConfirmationsSetting value="2" id="Add" />
+  </component>
   <component name="ProjectViewState">
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
@@ -63,7 +88,7 @@
     "git-widget-placeholder": "main",
     "junie.onboarding.icon.badge.shown": "true",
     "kotlin-language-version-configured": "true",
-    "last_opened_file_path": "/Users/josediaz/Projects/JoeDayz/contenerizacion/ejemplos",
+    "last_opened_file_path": "/Users/josediaz/Projects/JoeDayz/contenerizacion",
     "node.js.detected.package.eslint": "true",
     "node.js.detected.package.tslint": "true",
     "node.js.selected.package.eslint": "(autodetect)",
@@ -75,11 +100,11 @@
   }
 }]]></component>
   <component name="RecapSpentCounter">
-    <option name="endsOfQuotaMs" value="1773338466487" />
-    <option name="spentUsd" value="0.034659" />
+    <option name="endsOfQuotaMs" value="1775930540224" />
+    <option name="spentUsd" value="0.00770725" />
   </component>
   <component name="RecapUselessUpdatesCounter">
-    <option name="suspendCountdown" value="4" />
+    <option name="suspendCountdown" value="1" />
   </component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
@@ -105,7 +130,8 @@
       <option name="presentableId" value="Default" />
       <updated>1773143160460</updated>
       <workItem from="1773143161983" duration="2000" />
-      <workItem from="1773313408754" duration="7084000" />
+      <workItem from="1773313408754" duration="8614000" />
+      <workItem from="1773638950106" duration="2372000" />
     </task>
     <servers />
   </component>
