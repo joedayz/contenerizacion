@@ -129,7 +129,13 @@ Ese valor (`s.XXX...`) es el `VAULT_TOKEN` que usaremos para las prácticas.
 
 ## 7. Configurar el CLI de Vault en tu máquina
 
-Si tienes el binario de Vault instalado localmente (por ejemplo con Homebrew en macOS), configura estas variables de entorno en la terminal donde lo vayas a usar:
+> 🔴 **Muy importante**: antes de usar el comando `vault` desde tu máquina, asegúrate de que el **port-forward del paso 5 está activo** en otra terminal:
+>
+> ```bash
+> kubectl -n vault port-forward svc/vault 8200:8200
+> ```
+
+Si tienes el binario de Vault instalado localmente (por ejemplo con Homebrew en macOS o con Chocolatey en Windows), configura estas variables de entorno en la terminal donde lo vayas a usar:
 
 ```bash
 export VAULT_ADDR=http://127.0.0.1:8200
