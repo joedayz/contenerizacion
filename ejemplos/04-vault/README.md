@@ -21,6 +21,39 @@ Estos archivos son **referencia** para integrar Vault con Kubernetes. Requieren 
 
 El archivo `deployment-with-vault-annotations.yaml` muestra las anotaciones típicas para inyectar secretos de Vault en el Pod. El injector añade un sidecar que escribe los secretos en un volumen compartido.
 
+### Pasos rápidos para probarlo
+
+1. **Crear el secreto en Vault** (usando el KV en `secret/`):
+
+   ```bash
+   vault kv put secret/mi-app/db username="appuser" password="changeme"
+   ```
+
+2. **Aplicar el Deployment**:
+
+   ```bash
+   cd ejemplos/04-vault
+   kubectl apply -f deployment-with-vault-annotations.yaml
+   kubectl get pods -l app=app-con-vault -w
+   ```
+
+3. **Entrar al Pod y ver el archivo inyectado**:
+
+   ```bash
+   POD_NAME=$(kubectl get pod -l app=app-con-vault -o jsonpath='{.items[0].metadata.name}')
+   kubectl exec -it "$POD_NAME" -- sh
+   ```
+
+   Dentro del contenedor:
+
+   ```sh
+   ls -la /vault/secrets
+   cat /vault/secrets/db
+   exit
+   ```
+
+Si ves el contenido del secreto (usuario/contraseña) en `/vault/secrets/db`, significa que el **Vault Agent Injector** y las anotaciones del Deployment están funcionando correctamente.
+
 ## 3. Integración Quarkus + Vault (demo lista para clase)
 
 Proyecto: `quarkus-vault-demo/`

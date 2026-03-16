@@ -59,15 +59,44 @@ El rol de Kubernetes en Vault se configura para asociar un **service account** +
 
 ---
 
-## 5. Práctica recomendada
+## 5. Práctica recomendada (paso a paso con Injector)
 
-1. Tener Vault instalado (en el clúster o en un servidor accesible).
-2. Habilitar el **auth method** de Kubernetes y el **KV secrets engine**.
-3. Crear un secreto de ejemplo (por ejemplo `secret/mi-app/db`) con usuario y contraseña.
-4. Configurar un Deployment de prueba que use **Vault Agent Injector** para montar ese secreto en el Pod.
-5. Comprobar que la aplicación lee el secreto sin tenerlo en imagen ni en ConfigMap.
+1. **Instalar Vault en Kubernetes** (modo laboratorio)  
+   - Sigue la guía `04b-hashicorp-vault-k8s-docker-desktop.md` para desplegar Vault + Vault Agent Injector en el namespace `vault`.
 
-Los ejemplos en `ejemplos/04-vault/` incluyen anotaciones y manifiestos de referencia.
+2. **Crear un secreto de ejemplo en Vault**  
+   - Obtener el token raíz (en modo dev):
+     - `kubectl -n vault exec -it vault-0 -- sh -c 'echo $VAULT_DEV_ROOT_TOKEN_ID'`
+   - Exportar variables (ejemplo Bash):
+     - `export VAULT_ADDR=http://127.0.0.1:8200`  
+     - `export VAULT_TOKEN=<root o el valor obtenido>`
+   - Crear el secreto:
+     - `vault kv put secret/mi-app/db username="appuser" password="changeme"`
+
+3. **Aplicar el Deployment con anotaciones del Injector**  
+   - Usar el manifiesto `ejemplos/04-vault/deployment-with-vault-annotations.yaml`, que ya trae anotaciones típicas como:
+     - `vault.hashicorp.com/agent-inject: "true"`
+     - `vault.hashicorp.com/agent-inject-secret-db: "secret/mi-app/db"`
+   - Desplegar:
+     - `cd ejemplos/04-vault`
+     - `kubectl apply -f deployment-with-vault-annotations.yaml`
+     - `kubectl get pods -l app=app-con-vault -w`
+
+4. **Verificar el secreto inyectado en el Pod**  
+   - Entrar al Pod:
+     - `POD_NAME=$(kubectl get pod -l app=app-con-vault -o jsonpath='{.items[0].metadata.name}')`
+     - `kubectl exec -it "$POD_NAME" -- sh`
+   - Dentro del contenedor:
+     - `ls -la /vault/secrets`
+     - `cat /vault/secrets/db`  (o el nombre definido en la plantilla)
+   - Debes ver el usuario/contraseña que creaste en `secret/mi-app/db` sin que estén en la imagen ni en ConfigMaps.
+
+5. **Conectar esto con una aplicación real**  
+   - A partir de este Deployment base, puedes:
+     - montar `/vault/secrets/db` en tu app (por ejemplo Quarkus, Spring, Node),
+     - o parsear ese archivo para cargar variables de entorno al arrancar.
+
+Los manifiestos en `ejemplos/04-vault/` sirven como plantilla para reutilizar las anotaciones del Injector en otras aplicaciones.
 
 ---
 
