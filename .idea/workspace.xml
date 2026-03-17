@@ -6,8 +6,7 @@
   <component name="ChangeListManager">
     <list default="true" id="1ccca462-d708-4343-8d96-e32da063c8f8" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ejemplos/04-vault/ca.crt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ejemplos/04-vault/expense-service/LAB 4 - QUARKUS PERSISTENT.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/ejemplos/04-vault/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/ejemplos/04-vault/README.md" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -124,7 +123,7 @@
       <workItem from="1773313408754" duration="8614000" />
       <workItem from="1773638950106" duration="2372000" />
       <workItem from="1773657411278" duration="9494000" />
-      <workItem from="1773744415425" duration="4657000" />
+      <workItem from="1773744415425" duration="7848000" />
     </task>
     <servers />
   </component>

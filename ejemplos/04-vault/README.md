@@ -261,9 +261,9 @@ kubectl get pods -l app=postgres-expense -w   # esperar a Running
 # Secreto con credenciales de PostgreSQL + URL JDBC interna del clúster
 kubectl -n vault exec vault-0 -- \
   vault kv put secret/expense/db \
-    username="expense_user" \
-    password="S3cret!Vault" \
-    url="jdbc:postgresql://postgres-expense:5432/expensedb"
+    username='expense_user' \
+    password='S3cret!Vault' \
+    url='jdbc:postgresql://postgres-expense:5432/expensedb'
 
 # Policy de lectura
 kubectl -n vault exec vault-0 -- sh -c \
