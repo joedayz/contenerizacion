@@ -1,0 +1,79 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: expense-service
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: expense-service
+  labels:
+    app: expense-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: expense-service
+  template:
+    metadata:
+      labels:
+        app: expense-service
+      annotations:
+        # ── Vault Agent Injector ──
+        vault.hashicorp.com/agent-inject: "true"
+        vault.hashicorp.com/role: "expense-service-role"
+        vault.hashicorp.com/agent-inject-secret-db.properties: "secret/data/expense/db"
+        # Vault Agent escribe un archivo .properties que Quarkus lee directamente
+        vault.hashicorp.com/agent-inject-template-db.properties: |
+          {{- with secret "secret/data/expense/db" -}}
+          quarkus.datasource.username={{ .Data.data.username }}
+          quarkus.datasource.password={{ .Data.data.password }}
+          quarkus.datasource.jdbc.url={{ .Data.data.url }}
+          {{- end -}}
+    spec:
+      serviceAccountName: expense-service
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
+        runAsNonRoot: true
+      containers:
+      - name: app
+        image: localhost/expense-service:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8080
+        env:
+        # Quarkus (SmallRye Config) lee propiedades adicionales desde este archivo
+        - name: SMALLRYE_CONFIG_LOCATIONS
+          value: /vault/secrets/db.properties
+        livenessProbe:
+          httpGet:
+            path: /q/health/live
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /q/health/ready
+            port: 8080
+          initialDelaySeconds: 15
+          periodSeconds: 5
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: expense-service
+  labels:
+    app: expense-service
+spec:
+  selector:
+    app: expense-service
+  ports:
+  - name: http
+    port: 8080
+    targetPort: 8080

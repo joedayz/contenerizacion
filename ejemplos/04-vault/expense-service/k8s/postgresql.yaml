@@ -1,0 +1,75 @@
+# PostgreSQL para expense-service (entorno de clase / dev)
+# Credenciales hardcoded aquí — en producción se gestionarían con Vault u otro sistema.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: postgres-expense-pvc
+  labels:
+    app: postgres-expense
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 256Mi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres-expense
+  labels:
+    app: postgres-expense
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres-expense
+  template:
+    metadata:
+      labels:
+        app: postgres-expense
+    spec:
+      containers:
+      - name: postgres
+        image: postgres:16-alpine
+        ports:
+        - containerPort: 5432
+        env:
+        - name: POSTGRES_DB
+          value: expensedb
+        - name: POSTGRES_USER
+          value: expense_user
+        - name: POSTGRES_PASSWORD
+          value: S3cret!Vault
+        volumeMounts:
+        - name: pgdata
+          mountPath: /var/lib/postgresql/data
+        readinessProbe:
+          exec:
+            command: ["pg_isready", "-U", "expense_user", "-d", "expensedb"]
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: 500m
+            memory: 256Mi
+      volumes:
+      - name: pgdata
+        persistentVolumeClaim:
+          claimName: postgres-expense-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres-expense
+  labels:
+    app: postgres-expense
+spec:
+  selector:
+    app: postgres-expense
+  ports:
+  - port: 5432
+    targetPort: 5432
