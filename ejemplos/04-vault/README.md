@@ -26,6 +26,8 @@ El archivo `deployment-with-vault-annotations.yaml` muestra las anotaciones típ
 
 1. **Habilitar Kubernetes auth, configurarlo y crear el secreto/roles en Vault** (usando el KV en `secret/`):
 
+   **Linux / macOS (bash)**
+
    ```bash
    # Asumiendo que ya tienes VAULT_ADDR y VAULT_TOKEN configurados
 
@@ -79,6 +81,62 @@ El archivo `deployment-with-vault-annotations.yaml` muestra las anotaciones típ
      ttl=1h
    ```
 
+   **Windows (PowerShell)**
+
+   ```powershell
+   # Asumiendo que ya tienes VAULT_ADDR y VAULT_TOKEN configurados
+
+   # 1. Habilitar el método de autenticación Kubernetes (solo una vez)
+   vault auth enable kubernetes
+
+   # 2. Configurar el método de autenticación Kubernetes
+   kubectl -n vault exec vault-0 -- cat /var/run/secrets/kubernetes.io/serviceaccount/ca.crt | Out-File -Encoding ascii ca.crt
+   $SA_TOKEN = kubectl -n vault exec vault-0 -- cat /var/run/secrets/kubernetes.io/serviceaccount/token
+
+   vault write auth/kubernetes/config `
+     token_reviewer_jwt="$SA_TOKEN" `
+     kubernetes_host="https://kubernetes.default.svc:443" `
+     kubernetes_ca_cert=@ca.crt
+
+   # 3. Crear el secreto de ejemplo
+   vault kv put secret/mi-app/db username="appuser" password="changeme"
+
+   # 4. Policy con permiso de lectura sobre ese secreto
+   @"
+   path "secret/data/mi-app/db" {
+     capabilities = ["read"]
+   }
+   "@ | vault policy write mi-app-policy -
+
+   # 5. Role para app-con-vault (ServiceAccount default / namespace default)
+   vault write auth/kubernetes/role/app-con-vault-role `
+     bound_service_account_names=default `
+     bound_service_account_namespaces=default `
+     policies=mi-app-policy `
+     ttl=1h
+
+   # 6. Role para vault-quarkus-demo
+   vault write auth/kubernetes/role/vault-quarkus-demo-role `
+     bound_service_account_names=vault-quarkus-demo `
+     bound_service_account_namespaces=default `
+     policies=mi-app-policy `
+     ttl=1h
+
+   # 7. Secreto, policy y role para expense-service (ver sección 4)
+   vault kv put secret/expense/db username="expense_user" password="S3cret!Vault" url="jdbc:postgresql://postgres-expense:5432/expensedb"
+   @"
+   path "secret/data/expense/db" {
+     capabilities = ["read"]
+   }
+   "@ | vault policy write expense-policy -
+
+   vault write auth/kubernetes/role/expense-service-role `
+     bound_service_account_names=expense-service `
+     bound_service_account_namespaces=default `
+     policies=expense-policy `
+     ttl=1h
+   ```
+
 2. **Aplicar el Deployment**:
 
    ```bash
@@ -89,9 +147,18 @@ El archivo `deployment-with-vault-annotations.yaml` muestra las anotaciones típ
 
 3. **Entrar al Pod y ver el archivo inyectado**:
 
+   Linux / macOS:
+
    ```bash
    POD_NAME=$(kubectl get pod -l app=app-con-vault -o jsonpath='{.items[0].metadata.name}')
    kubectl exec -it "$POD_NAME" -- sh
+   ```
+
+   PowerShell:
+
+   ```powershell
+   $POD_NAME = kubectl get pod -l app=app-con-vault -o jsonpath='{.items[0].metadata.name}'
+   kubectl exec -it $POD_NAME -- sh
    ```
 
    Dentro del contenedor:
@@ -188,6 +255,8 @@ kubectl get pods -l app=postgres-expense -w   # esperar a Running
 
 ### 4.2. Crear secreto y role en Vault
 
+**Linux / macOS (bash)**
+
 ```bash
 # Secreto con credenciales de PostgreSQL + URL JDBC interna del clúster
 kubectl -n vault exec vault-0 -- \
@@ -213,9 +282,35 @@ kubectl -n vault exec vault-0 -- \
     ttl=1h
 ```
 
+**Windows (PowerShell)**
+
+```powershell
+# Secreto con credenciales de PostgreSQL + URL JDBC interna del clúster
+kubectl -n vault exec vault-0 -- `
+  vault kv put secret/expense/db `
+    username="expense_user" `
+    password="S3cret!Vault" `
+    url="jdbc:postgresql://postgres-expense:5432/expensedb"
+
+# Policy de lectura
+@"
+path "secret/data/expense/db" {
+  capabilities = ["read"]
+}
+"@ | kubectl -n vault exec -i vault-0 -- vault policy write expense-policy -
+
+# Role vinculado al ServiceAccount expense-service en namespace default
+kubectl -n vault exec vault-0 -- `
+  vault write auth/kubernetes/role/expense-service-role `
+    bound_service_account_names=expense-service `
+    bound_service_account_namespaces=default `
+    policies=expense-policy `
+    ttl=1h
+```
+
 ### 4.3. Construir y cargar la imagen
 
-#### Caso A: Docker Desktop
+#### Caso A: Docker Desktop (sin kind)
 
 ```bash
 cd expense-service
@@ -223,12 +318,19 @@ mvn clean package -DskipTests
 docker build -f src/main/docker/Dockerfile.jvm -t expense-service:latest .
 ```
 
-#### Caso B: Podman + kind
+#### Caso B: kind — Linux / macOS (Podman)
 
 ```bash
 cd ejemplos/04-vault
 chmod +x scripts/build-and-load-expense-service.sh
 CLUSTER_NAME=microservices ./scripts/build-and-load-expense-service.sh
+```
+
+#### Caso C: kind — Windows (Docker + PowerShell)
+
+```powershell
+cd ejemplos\04-vault
+.\scripts\build-and-load-expense-service.ps1 -ClusterName microservices
 ```
 
 ### 4.4. Desplegar expense-service
@@ -240,9 +342,15 @@ kubectl get pods -l app=expense-service -w   # esperar a 2/2 Running
 
 ### 4.5. Probar
 
+En una terminal aparte, abrir el port-forward (igual en bash o PowerShell):
+
 ```bash
 kubectl port-forward svc/expense-service 8083:8080
+```
 
+**Linux / macOS (bash)**
+
+```bash
 # Listar gastos
 curl http://localhost:8083/expenses
 
@@ -250,6 +358,17 @@ curl http://localhost:8083/expenses
 curl -X POST http://localhost:8083/expenses \
   -H 'Content-Type: application/json' \
   -d '{"name":"Test Vault","paymentMethod":"CASH","amount":"42.50","associateId":1}'
+```
+
+**Windows (PowerShell)**
+
+```powershell
+# Listar gastos
+Invoke-RestMethod http://localhost:8083/expenses
+
+# Crear un gasto (requiere Associate con id=1 — viene de import.sql)
+$body = @{ name="Test Vault"; paymentMethod="CASH"; amount="42.50"; associateId=1 } | ConvertTo-Json
+Invoke-RestMethod http://localhost:8083/expenses -Method Post -ContentType 'application/json' -Body $body
 ```
 
 ### ¿Cómo funciona la inyección?
@@ -268,6 +387,8 @@ curl -X POST http://localhost:8083/expenses \
 Vault corre en **modo dev** (`dataStorage.enabled: false`), por lo que **toda la configuración se pierde** cada vez que se reinicia el pod de Vault o el clúster de Kubernetes.
 
 Ejecuta este bloque completo cada vez que reinicies para dejar Vault listo:
+
+**Linux / macOS (bash)**
 
 ```bash
 # ── 1. Habilitar y configurar Kubernetes auth method ──
@@ -331,6 +452,73 @@ kubectl -n vault exec vault-0 -- \
 ```
 
 Después, si los pods ya estaban desplegados y quedaron en `Init:0/1`, elimínalos para que el Deployment cree pods nuevos que puedan autenticarse:
+
+```bash
+kubectl delete pods -l app=vault-quarkus-demo
+kubectl delete pods -l app=app-con-vault
+kubectl delete pods -l app=expense-service
+```
+
+**Windows (PowerShell)**
+
+```powershell
+# ── 1. Habilitar y configurar Kubernetes auth method ──
+kubectl -n vault exec vault-0 -- vault auth enable kubernetes
+
+kubectl -n vault exec vault-0 -- sh -c @'
+vault write auth/kubernetes/config \
+  kubernetes_host="https://kubernetes.default.svc:443" \
+  token_reviewer_jwt="$(cat /var/run/secrets/kubernetes.io/serviceaccount/token)" \
+  kubernetes_ca_cert="$(cat /var/run/secrets/kubernetes.io/serviceaccount/ca.crt)"
+'@
+
+# ── 2. Secretos de ejemplo ──
+kubectl -n vault exec vault-0 -- `
+  vault kv put secret/mi-app/db username="appuser" password="changeme"
+
+kubectl -n vault exec vault-0 -- `
+  vault kv put secret/expense/db `
+    username="expense_user" `
+    password="S3cret!Vault" `
+    url="jdbc:postgresql://postgres-expense:5432/expensedb"
+
+# ── 3. Policies de lectura ──
+@"
+path "secret/data/mi-app/db" {
+  capabilities = ["read"]
+}
+"@ | kubectl -n vault exec -i vault-0 -- vault policy write mi-app-policy -
+
+@"
+path "secret/data/expense/db" {
+  capabilities = ["read"]
+}
+"@ | kubectl -n vault exec -i vault-0 -- vault policy write expense-policy -
+
+# ── 4. Roles de Kubernetes (uno por deployment) ──
+kubectl -n vault exec vault-0 -- `
+  vault write auth/kubernetes/role/app-con-vault-role `
+    bound_service_account_names=default `
+    bound_service_account_namespaces=default `
+    policies=mi-app-policy `
+    ttl=1h
+
+kubectl -n vault exec vault-0 -- `
+  vault write auth/kubernetes/role/vault-quarkus-demo-role `
+    bound_service_account_names=vault-quarkus-demo `
+    bound_service_account_namespaces=default `
+    policies=mi-app-policy `
+    ttl=1h
+
+kubectl -n vault exec vault-0 -- `
+  vault write auth/kubernetes/role/expense-service-role `
+    bound_service_account_names=expense-service `
+    bound_service_account_namespaces=default `
+    policies=expense-policy `
+    ttl=1h
+```
+
+Después, si los pods quedaron en `Init:0/1`, elimínalos (igual en bash y PowerShell):
 
 ```bash
 kubectl delete pods -l app=vault-quarkus-demo
