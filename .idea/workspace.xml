@@ -4,12 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="1ccca462-d708-4343-8d96-e32da063c8f8" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/ejemplos/05-consul/demo-03-vault-consul/api-gateway.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/ejemplos/05-consul/demo-03-vault-consul/api-gateway.yaml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ejemplos/05-consul/demo-03-vault-consul/user-service.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/ejemplos/05-consul/demo-03-vault-consul/user-service.yaml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ejemplos/05-consul/scripts/cleanup.ps1" beforeDir="false" afterPath="$PROJECT_DIR$/ejemplos/05-consul/scripts/cleanup.ps1" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ejemplos/05-consul/scripts/verify-setup.ps1" beforeDir="false" afterPath="$PROJECT_DIR$/ejemplos/05-consul/scripts/verify-setup.ps1" afterDir="false" />
-    </list>
+    <list default="true" id="1ccca462-d708-4343-8d96-e32da063c8f8" name="Changes" comment="" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -126,7 +121,7 @@
       <workItem from="1773638950106" duration="2372000" />
       <workItem from="1773657411278" duration="9494000" />
       <workItem from="1773744415425" duration="8988000" />
-      <workItem from="1773830514244" duration="327000" />
+      <workItem from="1773830514244" duration="990000" />
     </task>
     <servers />
   </component>

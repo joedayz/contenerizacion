@@ -10,17 +10,20 @@ CMD ["/bin/sh", "-c", "\
     echo 'Port: 8080' && \
     rm -f /tmp/unhealthy && \
     while true; do \
+      if [ -f /tmp/unhealthy ]; then \
+        RESPONSE_BODY='{\"instance\":\"'$(hostname)'\",\"timestamp\":'$(date +%s)',\"status\":\"unhealthy\",\"data\":[]}'; \
+      else \
+        RESPONSE_BODY='{\"instance\":\"'$(hostname)'\",\"timestamp\":'$(date +%s)',\"status\":\"healthy\",\"data\":[1,2,3,4,5]}'; \
+      fi; \
       { \
         echo -e 'HTTP/1.1 200 OK\\r'; \
         echo -e 'Content-Type: application/json\\r'; \
+        echo -e 'Content-Length: '${#RESPONSE_BODY}'\\r'; \
         echo -e 'Connection: close\\r'; \
         echo -e '\\r'; \
-        if [ -f /tmp/unhealthy ]; then \
-          echo '{\"instance\":\"'$(hostname)'\",\"timestamp\":'$(date +%s)',\"status\":\"unhealthy\",\"data\":[]}'; \
-        else \
-          echo '{\"instance\":\"'$(hostname)'\",\"timestamp\":'$(date +%s)',\"status\":\"healthy\",\"data\":[1,2,3,4,5]}'; \
-        fi \
-      } | nc -l -p 8080; \
+        echo -n \"$RESPONSE_BODY\"; \
+      } | nc -l -p 8080 2>/dev/null || true; \
+      sleep 0.01; \
     done \
 "]
 
