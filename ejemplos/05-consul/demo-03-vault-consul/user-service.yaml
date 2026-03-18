@@ -1,0 +1,254 @@
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: user-service
+  namespace: default
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: user-service-config
+  namespace: default
+data:
+  application.properties: |
+    # Quarkus configuration
+    quarkus.http.port=8080
+    quarkus.application.name=user-service
+    
+    # Datasource configuration
+    # URL usa Consul DNS para descubrir PostgreSQL
+    quarkus.datasource.db-kind=postgresql
+    quarkus.datasource.jdbc.url=jdbc:postgresql://postgres-db.service.consul:5432/userdb
+    
+    # Credenciales vienen desde archivo inyectado por Vault
+    # El archivo /vault/secrets/database-config.txt contiene:
+    # username=xxx
+    # password=yyy
+    quarkus.datasource.username=${DB_USERNAME}
+    quarkus.datasource.password=${DB_PASSWORD}
+    
+    # Hibernate
+    quarkus.hibernate-orm.database.generation=update
+    quarkus.hibernate-orm.log.sql=true
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: user-service
+  namespace: default
+  labels:
+    app: user-service
+    demo: vault-consul
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: user-service
+  template:
+    metadata:
+      labels:
+        app: user-service
+      annotations:
+        # Consul: Solo registro, sin mesh
+        "consul.hashicorp.com/connect-inject": "false"
+        
+        # Vault Agent Injector annotations
+        "vault.hashicorp.com/agent-inject": "true"
+        "vault.hashicorp.com/role": "user-service-role"
+        "vault.hashicorp.com/agent-inject-secret-database-config.txt": "secret/data/demo03/database"
+        
+        # Template para formatear el secreto
+        "vault.hashicorp.com/agent-inject-template-database-config.txt": |
+          {{- with secret "secret/data/demo03/database" -}}
+          export DB_USERNAME="{{ .Data.data.username }}"
+          export DB_PASSWORD="{{ .Data.data.password }}"
+          export DB_HOST="{{ .Data.data.host }}"
+          export DB_PORT="{{ .Data.data.port }}"
+          export DB_DATABASE="{{ .Data.data.database }}"
+          {{- end -}}
+    spec:
+      serviceAccountName: user-service
+      containers:
+      - name: user-service
+        # Usamos una imagen simple con PostgreSQL client para simular
+        # En producción, esto sería tu imagen de Quarkus
+        image: postgres:15-alpine
+        command:
+          - /bin/sh
+          - -c
+          - |
+            echo "=== User Service Starting ==="
+            echo "Waiting for database credentials from Vault..."
+            
+            # Esperar a que Vault inyecte los secretos
+            while [ ! -f /vault/secrets/database-config.txt ]; do
+              echo "Waiting for Vault to inject secrets..."
+              sleep 2
+            done
+            
+            echo "✅ Secrets injected by Vault"
+            
+            # Source las credenciales
+            source /vault/secrets/database-config.txt
+            
+            echo "Database config:"
+            echo "  Host: $DB_HOST"
+            echo "  Port: $DB_PORT"
+            echo "  Database: $DB_DATABASE"
+            echo "  Username: $DB_USERNAME"
+            echo "  Password: ********"
+            
+            # Construir connection string para psql
+            export PGPASSWORD="$DB_PASSWORD"
+            DB_URL="postgresql://$DB_USERNAME:$DB_PASSWORD@$DB_HOST:$DB_PORT/$DB_DATABASE"
+            
+            # Servidor HTTP simple
+            cat > /tmp/server.sh << 'EOF'
+            #!/bin/sh
+            echo "Starting HTTP server on port 8080..."
+            
+            # Función para ejecutar queries
+            query_users() {
+              RESULT=$(PGPASSWORD="$DB_PASSWORD" psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USERNAME" -d "$DB_DATABASE" \
+                -t -c "SELECT json_agg(row_to_json(users)) FROM users;" 2>/dev/null || echo '[]')
+              echo "$RESULT" | tr -d '\n'
+            }
+            
+            create_user() {
+              NAME="$1"
+              EMAIL="$2"
+              PGPASSWORD="$DB_PASSWORD" psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USERNAME" -d "$DB_DATABASE" \
+                -c "INSERT INTO users (name, email) VALUES ('$NAME', '$EMAIL') RETURNING id;" 2>/dev/null
+            }
+            
+            while true; do
+              REQUEST=$(timeout 1 nc -l -p 8080 2>/dev/null)
+              
+              {
+                if echo "$REQUEST" | grep -q "GET /api/users HTTP"; then
+                  USERS=$(query_users)
+                  echo -e "HTTP/1.1 200 OK\r"
+                  echo -e "Content-Type: application/json\r"
+                  echo -e "Connection: close\r"
+                  echo -e "\r"
+                  cat << JSON
+            {
+              "users": $USERS,
+              "source": "$(hostname)",
+              "discovery": {
+                "database": "$DB_HOST (via Consul DNS)",
+                "credentialsFrom": "Vault Agent Injector"
+              }
+            }
+            JSON
+                  
+                elif echo "$REQUEST" | grep -q "GET /q/health HTTP"; then
+                  # Health check
+                  # Verificar conexión a BD
+                  if PGPASSWORD="$DB_PASSWORD" psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USERNAME" -d "$DB_DATABASE" -c "SELECT 1;" > /dev/null 2>&1; then
+                    echo -e "HTTP/1.1 200 OK\r"
+                    echo -e "Content-Type: application/json\r"
+                    echo -e "Connection: close\r"
+                    echo -e "\r"
+                    echo '{"status":"UP","checks":[{"name":"database","status":"UP"}]}'
+                  else
+                    echo -e "HTTP/1.1 503 Service Unavailable\r"
+                    echo -e "Content-Type: application/json\r"
+                    echo -e "Connection: close\r"
+                    echo -e "\r"
+                    echo '{"status":"DOWN","checks":[{"name":"database","status":"DOWN"}]}'
+                  fi
+                  
+                elif echo "$REQUEST" | grep -q "GET /api/info HTTP"; then
+                  echo -e "HTTP/1.1 200 OK\r"
+                  echo -e "Content-Type: application/json\r"
+                  echo -e "Connection: close\r"
+                  echo -e "\r"
+                  cat << JSON
+            {
+              "service": "user-service",
+              "instance": "$(hostname)",
+              "database": {
+                "host": "$DB_HOST",
+                "port": "$DB_PORT",
+                "database": "$DB_DATABASE",
+                "discoveredVia": "consul-dns"
+              },
+              "secrets": {
+                "source": "vault-agent-injector",
+                "injected": true
+              }
+            }
+            JSON
+                  
+                else
+                  echo -e "HTTP/1.1 404 Not Found\r"
+                  echo -e "Content-Type: application/json\r"
+                  echo -e "Connection: close\r"
+                  echo -e "\r"
+                  echo '{"error":"Not found","endpoints":["/api/users","/api/info","/q/health"]}'
+                fi
+              } | nc -l -p 8080 -q 1 2>/dev/null
+            done
+            EOF
+            
+            chmod +x /tmp/server.sh
+            source /vault/secrets/database-config.txt
+            /tmp/server.sh
+        ports:
+        - containerPort: 8080
+          name: http
+          protocol: TCP
+        # Health checks que Consul heredará
+        livenessProbe:
+          httpGet:
+            path: /q/health
+            port: 8080
+          initialDelaySeconds: 15
+          periodSeconds: 10
+          timeoutSeconds: 3
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /q/health
+            port: 8080
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 2
+          failureThreshold: 2
+        resources:
+          requests:
+            cpu: "100m"
+            memory: "128Mi"
+          limits:
+            cpu: "500m"
+            memory: "256Mi"
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 999
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+              - ALL
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: user-service
+  namespace: default
+  labels:
+    app: user-service
+  annotations:
+    "consul.hashicorp.com/service-name": "user-service"
+    "consul.hashicorp.com/service-port": "8080"
+    "consul.hashicorp.com/service-tags": "api,users"
+spec:
+  type: ClusterIP
+  selector:
+    app: user-service
+  ports:
+  - name: http
+    port: 8080
+    targetPort: 8080
+    protocol: TCP

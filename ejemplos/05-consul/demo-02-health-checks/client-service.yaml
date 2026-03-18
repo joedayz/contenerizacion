@@ -1,0 +1,166 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: client-service
+  namespace: default
+  labels:
+    app: client-service
+    demo: consul-health-checks
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: client-service
+  template:
+    metadata:
+      labels:
+        app: client-service
+      annotations:
+        "consul.hashicorp.com/connect-inject": "false"
+    spec:
+      containers:
+      - name: client
+        image: curlimages/curl:8.1.2
+        command:
+          - /bin/sh
+          - -c
+          - |
+            # Cliente que consume backend-service via Consul DNS
+            cat > /tmp/client-server.sh << 'EOF'
+            #!/bin/sh
+            echo "=== Client Service Starting ==="
+            echo "Connecting to backend via: $BACKEND_URL"
+            
+            # Función para hacer request al backend
+            call_backend() {
+              # Consul DNS resolverá a una instancia saludable
+              RESPONSE=$(curl -s "$BACKEND_URL/api/data" 2>/dev/null)
+              
+              if [ $? -eq 0 ]; then
+                echo "$RESPONSE"
+              else
+                echo '{"error":"Backend not reachable","backend_url":"'$BACKEND_URL'"}'
+              fi
+            }
+            
+            # Función para obtener todas las instancias del backend
+            list_backends() {
+              # Resolver DNS para ver todas las IPs
+              INSTANCES=$(nslookup backend-service.service.consul 2>/dev/null | grep "Address" | tail -n +2 | awk '{print $3}')
+              COUNT=$(echo "$INSTANCES" | wc -l)
+              
+              cat << JSON
+            {
+              "backend_instances": [
+                $(echo "$INSTANCES" | awk '{print "\"" $1 "\""}' | paste -sd,)
+              ],
+              "healthy_count": $COUNT,
+              "discovery_method": "consul-dns"
+            }
+            JSON
+            }
+            
+            while true; do
+              REQUEST=$(timeout 1 nc -l -p 8082 2>/dev/null)
+              
+              {
+                echo -e "HTTP/1.1 200 OK\r"
+                echo -e "Content-Type: application/json\r"
+                echo -e "Connection: close\r"
+                echo -e "\r"
+                
+                if echo "$REQUEST" | grep -q "GET /api/requests"; then
+                  # Hacer request al backend
+                  BACKEND_DATA=$(call_backend)
+                  cat << RESPONSE
+            {
+              "client": "$(hostname)",
+              "timestamp": $(date +%s),
+              "backend": $BACKEND_DATA,
+              "discovery": {
+                "method": "consul-dns",
+                "url": "$BACKEND_URL"
+              }
+            }
+            RESPONSE
+                  
+                elif echo "$REQUEST" | grep -q "GET /api/backends"; then
+                  # Listar backends disponibles
+                  list_backends
+                  
+                elif echo "$REQUEST" | grep -q "GET /api/test-loadbalance"; then
+                  # Hacer múltiples requests para ver distribución
+                  echo '{"requests":['
+                  for i in 1 2 3 4 5; do
+                    RESULT=$(call_backend)
+                    echo "  $RESULT"
+                    [ $i -lt 5 ] && echo ","
+                  done
+                  echo ']}'
+                  
+                elif echo "$REQUEST" | grep -q "GET /q/health"; then
+                  echo '{"status":"UP","checks":[]}'
+                  
+                else
+                  echo '{"error":"Not found","endpoints":["/api/requests","/api/backends","/api/test-loadbalance","/q/health"]}'
+                fi
+              } | nc -l -p 8082 -q 1 2>/dev/null
+            done
+            EOF
+            
+            chmod +x /tmp/client-server.sh
+            /tmp/client-server.sh
+        ports:
+        - containerPort: 8082
+          name: http
+          protocol: TCP
+        env:
+        - name: BACKEND_URL
+          value: "http://backend-service.service.consul:8080"
+        livenessProbe:
+          httpGet:
+            path: /q/health
+            port: 8082
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /q/health
+            port: 8082
+          initialDelaySeconds: 3
+          periodSeconds: 5
+        resources:
+          requests:
+            cpu: "50m"
+            memory: "32Mi"
+          limits:
+            cpu: "200m"
+            memory: "64Mi"
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 100
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+              - ALL
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: client-service
+  namespace: default
+  labels:
+    app: client-service
+  annotations:
+    "consul.hashicorp.com/service-name": "client-service"
+    "consul.hashicorp.com/service-port": "8082"
+spec:
+  type: ClusterIP
+  selector:
+    app: client-service
+  ports:
+  - name: http
+    port: 8082
+    targetPort: 8082
+    protocol: TCP

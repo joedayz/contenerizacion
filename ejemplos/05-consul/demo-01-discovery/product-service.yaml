@@ -1,0 +1,116 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: product-service-config
+  namespace: default
+data:
+  application.properties: |
+    quarkus.http.port=8080
+    quarkus.application.name=product-service
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: product-service
+  namespace: default
+  labels:
+    app: product-service
+    demo: consul-discovery
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: product-service
+  template:
+    metadata:
+      labels:
+        app: product-service
+      annotations:
+        # Consul: Solo registro, sin service mesh por ahora
+        "consul.hashicorp.com/connect-inject": "false"
+    spec:
+      containers:
+      - name: product-service
+        image: quay.io/quarkus/quarkus-micro-image:2.0
+        command: 
+          - /bin/sh
+          - -c
+          - |
+            # Simular un microservicio de productos simple
+            # En producción, esto sería tu aplicación Quarkus real
+            cat > /tmp/server.sh << 'EOF'
+            #!/bin/sh
+            echo "Starting Product Service on port 8080..."
+            
+            # Función para servir requests HTTP simples
+            while true; do
+              {
+                echo -e "HTTP/1.1 200 OK\r"
+                echo -e "Content-Type: application/json\r"
+                echo -e "Connection: close\r"
+                echo -e "\r"
+                if echo "$REQUEST" | grep -q "GET /api/products"; then
+                  echo '{"products":[{"id":1,"name":"Laptop","price":999.99},{"id":2,"name":"Mouse","price":29.99},{"id":3,"name":"Keyboard","price":79.99}],"source":"'$(hostname)'"}'
+                elif echo "$REQUEST" | grep -q "GET /q/health"; then
+                  echo '{"status":"UP","checks":[]}'
+                else
+                  echo '{"error":"Not found"}'
+                fi
+              } | nc -l -p 8080 -q 1
+            done
+            EOF
+            
+            chmod +x /tmp/server.sh
+            /tmp/server.sh
+        ports:
+        - containerPort: 8080
+          name: http
+          protocol: TCP
+        livenessProbe:
+          httpGet:
+            path: /q/health
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /q/health
+            port: 8080
+          initialDelaySeconds: 3
+          periodSeconds: 5
+        resources:
+          requests:
+            cpu: "100m"
+            memory: "128Mi"
+          limits:
+            cpu: "500m"
+            memory: "256Mi"
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 1001
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+              - ALL
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: product-service
+  namespace: default
+  labels:
+    app: product-service
+  annotations:
+    # Esto hace que Consul registre este servicio automáticamente
+    "consul.hashicorp.com/service-name": "product-service"
+    "consul.hashicorp.com/service-port": "8080"
+spec:
+  type: ClusterIP
+  selector:
+    app: product-service
+  ports:
+  - name: http
+    port: 8080
+    targetPort: 8080
+    protocol: TCP

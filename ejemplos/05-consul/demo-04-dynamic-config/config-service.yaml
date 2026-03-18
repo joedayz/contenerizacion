@@ -1,0 +1,334 @@
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: config-service
+  namespace: default
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: config-service
+  namespace: default
+  labels:
+    app: config-service
+    demo: dynamic-config
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: config-service
+  template:
+    metadata:
+      labels:
+        app: config-service
+      annotations:
+        "consul.hashicorp.com/connect-inject": "false"
+        
+        # Vault Agent Injector annotations
+        "vault.hashicorp.com/agent-inject": "true"
+        "vault.hashicorp.com/role": "config-service-role"
+        
+        # Inyectar API keys
+        "vault.hashicorp.com/agent-inject-secret-apikeys.env": "secret/data/demo04/api-keys"
+        "vault.hashicorp.com/agent-inject-template-apikeys.env": |
+          {{- with secret "secret/data/demo04/api-keys" -}}
+          export WEATHER_API_KEY="{{ .Data.data.weather-api }}"
+          export PAYMENT_GATEWAY_KEY="{{ .Data.data.payment-gateway }}"
+          export MAPS_API_KEY="{{ .Data.data.maps-api }}"
+          export ANALYTICS_ID="{{ .Data.data.analytics }}"
+          {{- end -}}
+        
+        # Inyectar JWT secrets
+        "vault.hashicorp.com/agent-inject-secret-jwt.env": "secret/data/demo04/jwt"
+        "vault.hashicorp.com/agent-inject-template-jwt.env": |
+          {{- with secret "secret/data/demo04/jwt" -}}
+          export JWT_SECRET="{{ .Data.data.secret }}"
+          export JWT_ALGORITHM="{{ .Data.data.algorithm }}"
+          export JWT_EXPIRATION="{{ .Data.data.expiration }}"
+          export JWT_ISSUER="{{ .Data.data.issuer }}"
+          {{- end -}}
+    spec:
+      serviceAccountName: config-service
+      containers:
+      - name: config-service
+        image: curlimages/curl:8.1.2
+        command:
+          - /bin/sh
+          - -c
+          - |
+            echo "=== Config Service with Dynamic Configuration ==="
+            
+            # Esperar a que Vault inyecte los secretos
+            while [ ! -f /vault/secrets/apikeys.env ]; do
+              echo "Waiting for Vault to inject secrets..."
+              sleep 2
+            done
+            
+            echo "✅ Vault secrets injected"
+            
+            # Source secrets
+            source /vault/secrets/apikeys.env
+            source /vault/secrets/jwt.env
+            
+            # Crear script de servidor con hot reload
+            cat > /tmp/config-server.sh << 'MAINEOF'
+            #!/bin/sh
+            
+            echo "Starting Config Service on port 8085..."
+            echo "Consul KV prefix: demo04/config/"
+            
+            # URL de Consul
+            CONSUL_URL="http://consul-server.consul.svc.cluster.local:8500"
+            
+            # Función para obtener valor de Consul KV
+            consul_get() {
+              KEY="$1"
+              curl -s "$CONSUL_URL/v1/kv/demo04/config/$KEY?raw" 2>/dev/null || echo "not-set"
+            }
+            
+            # Función para obtener toda la config de una categoría
+            consul_get_tree() {
+              PREFIX="$1"
+              curl -s "$CONSUL_URL/v1/kv/demo04/config/$PREFIX?keys" 2>/dev/null | \
+                jq -r '.[]' | \
+                sed 's|demo04/config/'"$PREFIX"'/||'
+            }
+            
+            # Función para obtener configuración actual
+            get_current_config() {
+              # Features
+              FEATURES=$(cat <<JSON
+            {
+              "new-ui": "$(consul_get features/new-ui)",
+              "analytics": "$(consul_get features/analytics)",
+              "dark-mode": "$(consul_get features/dark-mode)",
+              "beta-features": "$(consul_get features/beta-features)"
+            }
+            JSON
+              )
+              
+              # Rate limit
+              RATELIMIT=$(cat <<JSON
+            {
+              "requests-per-second": "$(consul_get ratelimit/requests-per-second)",
+              "burst": "$(consul_get ratelimit/burst)",
+              "enabled": "$(consul_get ratelimit/enabled)"
+            }
+            JSON
+              )
+              
+              # Cache
+              CACHE=$(cat <<JSON
+            {
+              "ttl": "$(consul_get cache/ttl)",
+              "max-size": "$(consul_get cache/max-size)",
+              "enabled": "$(consul_get cache/enabled)"
+            }
+            JSON
+              )
+              
+              # Timeouts
+              TIMEOUTS=$(cat <<JSON
+            {
+              "connect": "$(consul_get timeouts/connect)",
+              "read": "$(consul_get timeouts/read)",
+              "write": "$(consul_get timeouts/write)"
+            }
+            JSON
+              )
+              
+              # Circuit breaker
+              CIRCUIT_BREAKER=$(cat <<JSON
+            {
+              "enabled": "$(consul_get circuit-breaker/enabled)",
+              "threshold": "$(consul_get circuit-breaker/threshold)",
+              "timeout": "$(consul_get circuit-breaker/timeout)"
+            }
+            JSON
+              )
+              
+              # Construir respuesta completa
+              cat <<JSON
+            {
+              "config": {
+                "features": $FEATURES,
+                "ratelimit": $RATELIMIT,
+                "cache": $CACHE,
+                "timeouts": $TIMEOUTS,
+                "circuitBreaker": $CIRCUIT_BREAKER
+              },
+              "secrets": {
+                "apiKeys": {
+                  "weatherApi": "${WEATHER_API_KEY:0:10}***",
+                  "paymentGateway": "${PAYMENT_GATEWAY_KEY:0:10}***",
+                  "mapsApi": "${MAPS_API_KEY:0:10}***",
+                  "analytics": "${ANALYTICS_ID}"
+                },
+                "jwt": {
+                  "algorithm": "$JWT_ALGORITHM",
+                  "expiration": "$JWT_EXPIRATION",
+                  "issuer": "$JWT_ISSUER"
+                }
+              },
+              "metadata": {
+                "lastUpdate": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+                "instance": "$(hostname)",
+                "sources": {
+                  "config": "consul-kv",
+                  "secrets": "vault-agent-injector"
+                }
+              }
+            }
+            JSON
+            }
+            
+            # Servidor HTTP
+            while true; do
+              REQUEST=$(timeout 1 nc -l -p 8085 2>/dev/null)
+              METHOD=$(echo "$REQUEST" | head -1 | awk '{print $1}')
+              PATH=$(echo "$REQUEST" | head -1 | awk '{print $2}')
+              
+              {
+                echo -e "HTTP/1.1 200 OK\r"
+                echo -e "Content-Type: application/json\r"
+                echo -e "Connection: close\r"
+                echo -e "\r"
+                
+                if [ "$PATH" = "/api/config" ]; then
+                  # Toda la configuración
+                  get_current_config
+                  
+                elif [ "$PATH" = "/api/config/features" ]; then
+                  # Solo features
+                  CONFIG=$(get_current_config)
+                  echo "$CONFIG" | jq '.config.features'
+                  
+                elif [ "$PATH" = "/api/config/ratelimit" ]; then
+                  # Solo rate limit
+                  CONFIG=$(get_current_config)
+                  echo "$CONFIG" | jq '.config.ratelimit'
+                  
+                elif [ "$PATH" = "/api/features/new-ui/status" ]; then
+                  # Status de una feature específica
+                  STATUS=$(consul_get features/new-ui)
+                  if [ "$STATUS" = "enabled" ]; then
+                    cat <<JSON
+            {
+              "feature": "new-ui",
+              "status": "$STATUS",
+              "message": "New UI is active. Showing modern interface."
+            }
+            JSON
+                  else
+                    cat <<JSON
+            {
+              "feature": "new-ui",
+              "status": "$STATUS",
+              "message": "New UI is disabled. Showing classic interface."
+            }
+            JSON
+                  fi
+                  
+                elif [ "$PATH" = "/api/data" ]; then
+                  # Endpoint que respeta rate limiting
+                  RPS=$(consul_get ratelimit/requests-per-second)
+                  cat <<JSON
+            {
+              "data": ["sample", "data", "array"],
+              "ratelimit": {
+                "limit": $RPS,
+                "remaining": $((RPS - 1))
+              },
+              "timestamp": $(date +%s)
+            }
+            JSON
+                  
+                elif [ "$PATH" = "/q/health" ]; then
+                  # Health check
+                  if curl -sf "$CONSUL_URL/v1/status/leader" > /dev/null; then
+                    cat <<JSON
+            {
+              "status": "UP",
+              "checks": [
+                {"name": "consul", "status": "UP"},
+                {"name": "vault", "status": "UP"}
+              ]
+            }
+            JSON
+                  else
+                    echo '{"status":"DOWN"}'
+                  fi
+                  
+                else
+                  cat <<JSON
+            {
+              "error": "Not found",
+              "path": "$PATH",
+              "availableEndpoints": [
+                "GET /api/config",
+                "GET /api/config/features",
+                "GET /api/config/ratelimit",
+                "GET /api/features/new-ui/status",
+                "GET /api/data",
+                "GET /q/health"
+              ]
+            }
+            JSON
+                fi
+              } | nc -l -p 8085 -q 1 2>/dev/null
+            done
+            MAINEOF
+            
+            chmod +x /tmp/config-server.sh
+            /tmp/config-server.sh
+        ports:
+        - containerPort: 8085
+          name: http
+          protocol: TCP
+        livenessProbe:
+          httpGet:
+            path: /q/health
+            port: 8085
+          initialDelaySeconds: 15
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /q/health
+            port: 8085
+          initialDelaySeconds: 10
+          periodSeconds: 5
+        resources:
+          requests:
+            cpu: "100m"
+            memory: "64Mi"
+          limits:
+            cpu: "200m"
+            memory: "128Mi"
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 100
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+              - ALL
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: config-service
+  namespace: default
+  labels:
+    app: config-service
+  annotations:
+    "consul.hashicorp.com/service-name": "config-service"
+    "consul.hashicorp.com/service-port": "8085"
+spec:
+  type: ClusterIP
+  selector:
+    app: config-service
+  ports:
+  - name: http
+    port: 8085
+    targetPort: 8085
+    protocol: TCP

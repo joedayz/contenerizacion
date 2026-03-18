@@ -1,0 +1,156 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend-service
+  namespace: default
+  labels:
+    app: backend-service
+    demo: consul-health-checks
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: backend-service
+  template:
+    metadata:
+      labels:
+        app: backend-service
+      annotations:
+        "consul.hashicorp.com/connect-inject": "false"
+    spec:
+      containers:
+      - name: backend
+        image: busybox:1.36
+        command:
+          - /bin/sh
+          - -c
+          - |
+            # Crear servidor HTTP simple con health check configurable
+            cat > /tmp/server.sh << 'EOF'
+            #!/bin/sh
+            echo "=== Backend Service Starting ==="
+            echo "Hostname: $(hostname)"
+            echo "Port: 8080"
+            
+            # Estado inicial: saludable
+            rm -f /tmp/unhealthy
+            
+            while true; do
+              REQUEST=$(timeout 1 nc -l -p 8080 2>/dev/null)
+              
+              {
+                if echo "$REQUEST" | grep -q "GET /api/data"; then
+                  # Endpoint de datos
+                  echo -e "HTTP/1.1 200 OK\r"
+                  echo -e "Content-Type: application/json\r"
+                  echo -e "Connection: close\r"
+                  echo -e "\r"
+                  echo "{\"instance\":\"$(hostname)\",\"timestamp\":$(date +%s),\"status\":\"healthy\",\"data\":[1,2,3,4,5]}"
+                  
+                elif echo "$REQUEST" | grep -q "GET /q/health"; then
+                  # Health check endpoint
+                  if [ -f /tmp/unhealthy ]; then
+                    echo -e "HTTP/1.1 503 Service Unavailable\r"
+                    echo -e "Content-Type: application/json\r"
+                    echo -e "Connection: close\r"
+                    echo -e "\r"
+                    echo "{\"status\":\"DOWN\",\"checks\":[{\"name\":\"manual-health\",\"status\":\"DOWN\"}]}"
+                  else
+                    echo -e "HTTP/1.1 200 OK\r"
+                    echo -e "Content-Type: application/json\r"
+                    echo -e "Connection: close\r"
+                    echo -e "\r"
+                    echo "{\"status\":\"UP\",\"checks\":[{\"name\":\"manual-health\",\"status\":\"UP\"}]}"
+                  fi
+                  
+                elif echo "$REQUEST" | grep -q "POST /admin/health/fail"; then
+                  # Simular falla
+                  touch /tmp/unhealthy
+                  echo -e "HTTP/1.1 200 OK\r"
+                  echo -e "Content-Type: application/json\r"
+                  echo -e "Connection: close\r"
+                  echo -e "\r"
+                  echo "{\"message\":\"Instance $(hostname) marked as unhealthy\"}"
+                  
+                elif echo "$REQUEST" | grep -q "POST /admin/health/recover"; then
+                  # Recuperar
+                  rm -f /tmp/unhealthy
+                  echo -e "HTTP/1.1 200 OK\r"
+                  echo -e "Content-Type: application/json\r"
+                  echo -e "Connection: close\r"
+                  echo -e "\r"
+                  echo "{\"message\":\"Instance $(hostname) recovered\"}"
+                  
+                else
+                  echo -e "HTTP/1.1 404 Not Found\r"
+                  echo -e "Content-Type: application/json\r"
+                  echo -e "Connection: close\r"
+                  echo -e "\r"
+                  echo "{\"error\":\"Not found\",\"available\":[\"/api/data\",\"/q/health\",\"/admin/health/fail\",\"/admin/health/recover\"]}"
+                fi
+              } | nc -l -p 8080 -q 1 2>/dev/null
+            done
+            EOF
+            
+            chmod +x /tmp/server.sh
+            /tmp/server.sh
+        ports:
+        - containerPort: 8080
+          name: http
+          protocol: TCP
+        # Kubernetes liveness check: verifica que el pod sigue vivo
+        livenessProbe:
+          exec:
+            command:
+            - sh
+            - -c
+            - "[ ! -f /tmp/unhealthy ]"
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 2
+          failureThreshold: 3
+        # Kubernetes readiness check: verifica que el pod está listo para tráfico
+        # Consul también usa esto para determinar si incluir la instancia
+        readinessProbe:
+          exec:
+            command:
+            - sh
+            - -c
+            - "[ ! -f /tmp/unhealthy ]"
+          initialDelaySeconds: 3
+          periodSeconds: 5
+          timeoutSeconds: 2
+          failureThreshold: 2
+        resources:
+          requests:
+            cpu: "50m"
+            memory: "32Mi"
+          limits:
+            cpu: "200m"
+            memory: "64Mi"
+      # Nota: busybox corre como root por defecto
+      # En producción, usa una imagen con usuario non-root
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend-service
+  namespace: default
+  labels:
+    app: backend-service
+  annotations:
+    # Consul registra este servicio automáticamente
+    "consul.hashicorp.com/service-name": "backend-service"
+    "consul.hashicorp.com/service-port": "8080"
+    # Consul heredará los health checks de Kubernetes
+    "consul.hashicorp.com/service-sync": "true"
+spec:
+  type: ClusterIP
+  selector:
+    app: backend-service
+  ports:
+  - name: http
+    port: 8080
+    targetPort: 8080
+    protocol: TCP

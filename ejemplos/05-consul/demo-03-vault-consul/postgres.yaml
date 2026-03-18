@@ -1,0 +1,149 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgres-init-script
+  namespace: default
+data:
+  init.sql: |
+    -- Crear base de datos si no existe
+    CREATE DATABASE IF NOT EXISTS userdb;
+    
+    -- Conectar a userdb
+    \c userdb;
+    
+    -- Crear tabla de usuarios
+    CREATE TABLE IF NOT EXISTS users (
+      id SERIAL PRIMARY KEY,
+      name VARCHAR(100) NOT NULL,
+      email VARCHAR(100) UNIQUE NOT NULL,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+    
+    -- Datos de ejemplo
+    INSERT INTO users (name, email) VALUES
+      ('Demo User 1', 'demo1@example.com'),
+      ('Demo User 2', 'demo2@example.com')
+    ON CONFLICT (email) DO NOTHING;
+    
+    -- Verificar
+    SELECT * FROM users;
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres-db
+  namespace: default
+  labels:
+    app: postgres-db
+  annotations:
+    # Registrar en Consul
+    "consul.hashicorp.com/service-name": "postgres-db"
+    "consul.hashicorp.com/service-port": "5432"
+    "consul.hashicorp.com/service-tags": "database,postgresql"
+spec:
+  type: ClusterIP
+  selector:
+    app: postgres-db
+  ports:
+  - name: postgres
+    port: 5432
+    targetPort: 5432
+    protocol: TCP
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: postgres-db
+  namespace: default
+  labels:
+    app: postgres-db
+    demo: vault-consul
+spec:
+  serviceName: postgres-db
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres-db
+  template:
+    metadata:
+      labels:
+        app: postgres-db
+      annotations:
+        "consul.hashicorp.com/connect-inject": "false"
+    spec:
+      containers:
+      - name: postgres
+        image: postgres:15-alpine
+        ports:
+        - containerPort: 5432
+          name: postgres
+          protocol: TCP
+        env:
+        # Estas son credenciales INICIALES para el setup
+        # En producción, las apps obtienen credenciales dinámicas de Vault
+        - name: POSTGRES_DB
+          value: "userdb"
+        - name: POSTGRES_USER
+          value: "userdb"
+        - name: POSTGRES_PASSWORD
+          value: "SecureP@ssw0rd2024"
+        - name: PGDATA
+          value: "/var/lib/postgresql/data/pgdata"
+        volumeMounts:
+        - name: postgres-storage
+          mountPath: /var/lib/postgresql/data
+        - name: init-script
+          mountPath: /docker-entrypoint-initdb.d
+        # Health checks
+        livenessProbe:
+          exec:
+            command:
+            - pg_isready
+            - -U
+            - userdb
+            - -d
+            - userdb
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          exec:
+            command:
+            - pg_isready
+            - -U
+            - userdb
+            - -d
+            - userdb
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 2
+        resources:
+          requests:
+            cpu: "250m"
+            memory: "256Mi"
+          limits:
+            cpu: "500m"
+            memory: "512Mi"
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 999
+          runAsGroup: 999
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+              - ALL
+      volumes:
+      - name: init-script
+        configMap:
+          name: postgres-init-script
+  volumeClaimTemplates:
+  - metadata:
+      name: postgres-storage
+    spec:
+      accessModes: ["ReadWriteOnce"]
+      resources:
+        requests:
+          storage: 1Gi
