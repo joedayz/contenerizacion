@@ -2,7 +2,7 @@
 
 $ErrorActionPreference = "Stop"
 
-Write-Host "=== Configurando Vault para Demo 4 ===" -ForegroundColor Cyan
+Write-Host "=== Configurando Vault Secrets para Demo 4 ===" -ForegroundColor Cyan
 Write-Host ""
 
 # Verificar que Vault esté instalado
@@ -12,74 +12,80 @@ if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrEmpty($vaultPod)) {
     exit 1
 }
 
-Write-Host "1. Habilitando Kubernetes auth method (si no está)..." -ForegroundColor Blue
-& kubectl exec -n vault $vaultPod -- vault auth enable kubernetes 2>&1 | Out-Null
-if ($LASTEXITCODE -ne 0) {
-    Write-Host "⚠️  Kubernetes auth ya estaba habilitado" -ForegroundColor Yellow
+Write-Host "✅ Vault está corriendo" -ForegroundColor Green
+Write-Host ""
+
+Write-Host "3. Creando API keys..." -ForegroundColor Blue
+& kubectl exec -n vault $vaultPod -- vault kv put secret/demo04/api-keys `
+    weather-api=sk_prod_abc123xyz789 `
+    payment-gateway=pk_live_def456uvw012 `
+    maps-api=AIzaSyC_maps_key_example `
+    analytics=ga_tracking_id_UA-12345
+Write-Host "✅ API keys creados" -ForegroundColor Green
+
+Write-Host "4. Creando JWT secrets..." -ForegroundColor Blue
+& kubectl exec -n vault $vaultPod -- vault kv put secret/demo04/jwt `
+    secret=super-secret-jwt-key-do-not-share-2024 `
+    algorithm=HS256 `
+    expiration=3600 `
+    issuer=demo-app
+Write-Host "✅ JWT secrets creados" -ForegroundColor Green
+
+Write-Host "5. Creando integration secrets..." -ForegroundColor Blue
+& kubectl exec -n vault $vaultPod -- vault kv put secret/demo04/integrations `
+    slack-webhook=https://hooks.slack.com/services/T00/B00/xxx `
+    github-token=ghp_example_token_123456 `
+    sendgrid-api-key=SG.example_key_789
+Write-Host "✅ Integration secrets creados" -ForegroundColor Green
+
+Write-Host "6. Creando policy..." -ForegroundColor Blue
+$POLICY = @"
+# Permiso para leer todos los secretos de demo04
+path `"secret/data/demo04/*`" {
+  capabilities = [`"read`"]
 }
 
-Write-Host "2. Configurando Kubernetes auth..." -ForegroundColor Blue
-$K8S_HOST = "https://10.96.0.1:443"
-$SA_TOKEN = & kubectl exec -n vault $vaultPod -- cat /var/run/secrets/kubernetes.io/serviceaccount/token
-$SA_CA_CRT = & kubectl exec -n vault $vaultPod -- cat /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
-
-& kubectl exec -n vault $vaultPod -- vault write auth/kubernetes/config `
-    token_reviewer_jwt="$SA_TOKEN" `
-    kubernetes_host="$K8S_HOST" `
-    kubernetes_ca_cert="$SA_CA_CRT"
-
-Write-Host "3. Habilitando KV secrets engine..." -ForegroundColor Blue
-& kubectl exec -n vault $vaultPod -- vault secrets enable -path=demo04 kv-v2 2>&1 | Out-Null
-if ($LASTEXITCODE -ne 0) {
-    Write-Host "⚠️  KV secrets engine ya estaba habilitado" -ForegroundColor Yellow
+# Permiso para listar
+path `"secret/metadata/demo04/*`" {
+  capabilities = [`"list`"]
 }
-
-Write-Host "4. Creando secretos sensibles..." -ForegroundColor Blue
-& kubectl exec -n vault $vaultPod -- vault kv put demo04/secrets/api `
-    api_key=super-secret-api-key-12345 `
-    api_secret=top-secret-value-xyz
-
-& kubectl exec -n vault $vaultPod -- vault kv put demo04/secrets/database `
-    db_password=my-secure-password-456 `
-    encryption_key=aes-256-encryption-key
-
-Write-Host "5. Creando policy para config-service..." -ForegroundColor Blue
-$POLICY = @'
-path "demo04/data/secrets/*" {
-  capabilities = ["read"]
-}
-'@
+"@
 
 & kubectl exec -n vault $vaultPod -- sh -c "echo '$POLICY' | vault policy write config-service-policy -"
+Write-Host "✅ Policy creada" -ForegroundColor Green
 
-Write-Host "6. Creando Kubernetes service account..." -ForegroundColor Blue
-& kubectl create serviceaccount config-service --dry-run=client -o yaml | & kubectl apply -f -
-
-Write-Host "7. Vinculando Vault role con service account..." -ForegroundColor Blue
-& kubectl exec -n vault $vaultPod -- vault write auth/kubernetes/role/config-service `
+Write-Host "7. Creando role..." -ForegroundColor Blue
+& kubectl exec -n vault $vaultPod -- vault write auth/kubernetes/role/config-service-role `
     bound_service_account_names=config-service `
     bound_service_account_namespaces=default `
     policies=config-service-policy `
     ttl=1h
+Write-Host "✅ Role creado" -ForegroundColor Green
+
+Write-Host ""
+Write-Host "8. Verificando configuración..." -ForegroundColor Blue
+Write-Host ""
+Write-Host "API Keys:" -ForegroundColor Yellow
+& kubectl exec -n vault $vaultPod -- vault kv get secret/demo04/api-keys
+Write-Host ""
+Write-Host "JWT Secrets:" -ForegroundColor Yellow
+& kubectl exec -n vault $vaultPod -- vault kv get secret/demo04/jwt
+Write-Host ""
+Write-Host "Integrations:" -ForegroundColor Yellow
+& kubectl exec -n vault $vaultPod -- vault kv get secret/demo04/integrations
 
 Write-Host ""
 Write-Host "═══════════════════════════════════════════════════" -ForegroundColor Green
-Write-Host "✅ Vault configurado para Demo 4" -ForegroundColor Green
+Write-Host "✅ Vault Secrets configurado para Demo 4" -ForegroundColor Green
 Write-Host "═══════════════════════════════════════════════════" -ForegroundColor Green
 Write-Host ""
 Write-Host "Configuración creada:" -ForegroundColor Yellow
-Write-Host "  • Kubernetes auth habilitado" -ForegroundColor White
-Write-Host "  • Secretos en: demo04/secrets/*" -ForegroundColor White
+Write-Host "  • API Keys: secret/demo04/api-keys" -ForegroundColor White
+Write-Host "  • JWT Secrets: secret/demo04/jwt" -ForegroundColor White
+Write-Host "  • Integrations: secret/demo04/integrations" -ForegroundColor White
 Write-Host "  • Policy: config-service-policy" -ForegroundColor White
-Write-Host "  • Role: config-service" -ForegroundColor White
+Write-Host "  • Role: config-service-role" -ForegroundColor White
 Write-Host "  • ServiceAccount: config-service" -ForegroundColor White
-Write-Host ""
-Write-Host "Para verificar:" -ForegroundColor Cyan
-Write-Host "  kubectl port-forward -n vault svc/vault 8200:8200" -ForegroundColor White
-Write-Host "  `$env:VAULT_ADDR='http://localhost:8200'" -ForegroundColor White
-Write-Host "  `$env:VAULT_TOKEN='root'" -ForegroundColor White
-Write-Host "  vault kv get demo04/secrets/api" -ForegroundColor White
-Write-Host "  vault kv get demo04/secrets/database" -ForegroundColor White
 Write-Host ""
 Write-Host "Próximos pasos:" -ForegroundColor Cyan
 Write-Host "  kubectl apply -f config-service.yaml" -ForegroundColor White

@@ -1,0 +1,7 @@
+FROM alpine:3.18
+
+# Instalar herramientas necesarias
+RUN apk add --no-cache curl jq netcat-openbsd coreutils bash
+
+# Script wrapper se creará en el pod desde config-service.yaml
+CMD ["/bin/sh"]

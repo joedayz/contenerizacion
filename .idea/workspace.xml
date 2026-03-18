@@ -5,11 +5,8 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="1ccca462-d708-4343-8d96-e32da063c8f8" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ejemplos/05-consul/demo-03-vault-consul/01-setup-vault.ps1" beforeDir="false" afterPath="$PROJECT_DIR$/ejemplos/05-consul/demo-03-vault-consul/01-setup-vault.ps1" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ejemplos/05-consul/demo-03-vault-consul/Dockerfile.api-gateway" beforeDir="false" afterPath="$PROJECT_DIR$/ejemplos/05-consul/demo-03-vault-consul/Dockerfile.api-gateway" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ejemplos/05-consul/demo-03-vault-consul/api-gateway.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/ejemplos/05-consul/demo-03-vault-consul/api-gateway.yaml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ejemplos/05-consul/demo-03-vault-consul/user-service.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/ejemplos/05-consul/demo-03-vault-consul/user-service.yaml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ejemplos/05-consul/demo-04-dynamic-config/02-setup-vault-secrets.ps1" beforeDir="false" afterPath="$PROJECT_DIR$/ejemplos/05-consul/demo-04-dynamic-config/02-setup-vault-secrets.ps1" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ejemplos/05-consul/demo-04-dynamic-config/config-service.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/ejemplos/05-consul/demo-04-dynamic-config/config-service.yaml" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -128,7 +125,7 @@
       <workItem from="1773657411278" duration="9494000" />
       <workItem from="1773744415425" duration="8988000" />
       <workItem from="1773830514244" duration="990000" />
-      <workItem from="1773834837150" duration="1137000" />
+      <workItem from="1773834837150" duration="1918000" />
     </task>
     <servers />
   </component>
