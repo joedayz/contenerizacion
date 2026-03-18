@@ -36,16 +36,16 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 Write-Host "4. Creando secretos de PostgreSQL..." -ForegroundColor Blue
-& kubectl exec -n vault $vaultPod -- vault kv put demo03/postgres `
+& kubectl exec -n vault $vaultPod -- vault kv put demo03/database `
     username=myuser `
     password=mypassword123 `
-    host=postgres `
+    host=postgres-db `
     port=5432 `
-    database=mydb
+    database=userdb
 
 Write-Host "5. Creando policy para user-service..." -ForegroundColor Blue
 $POLICY = @'
-path "demo03/data/postgres" {
+path "demo03/data/database" {
   capabilities = ["read"]
 }
 '@
@@ -56,7 +56,7 @@ Write-Host "6. Creando Kubernetes service account..." -ForegroundColor Blue
 & kubectl create serviceaccount user-service --dry-run=client -o yaml | & kubectl apply -f -
 
 Write-Host "7. Vinculando Vault role con service account..." -ForegroundColor Blue
-& kubectl exec -n vault $vaultPod -- vault write auth/kubernetes/role/user-service `
+& kubectl exec -n vault $vaultPod -- vault write auth/kubernetes/role/user-service-role `
     bound_service_account_names=user-service `
     bound_service_account_namespaces=default `
     policies=user-service-policy `

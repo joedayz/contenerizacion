@@ -80,16 +80,14 @@ spec:
           protocol: TCP
         # Health checks que Consul heredará
         livenessProbe:
-          httpGet:
-            path: /q/health
+          tcpSocket:
             port: 8080
           initialDelaySeconds: 15
           periodSeconds: 10
           timeoutSeconds: 3
           failureThreshold: 3
         readinessProbe:
-          httpGet:
-            path: /q/health
+          tcpSocket:
             port: 8080
           initialDelaySeconds: 10
           periodSeconds: 5
