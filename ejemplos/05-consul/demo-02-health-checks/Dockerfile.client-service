@@ -11,9 +11,8 @@ CMD ["/bin/sh", "-c", "\
     echo 'Backend URL: '$BACKEND_URL && \
     echo 'Hostname: '$(hostname) && \
     while true; do \
-      BACKEND_DATA=$(curl -s \"$BACKEND_URL\" 2>/dev/null || echo '{\"error\":\"Backend not reachable\"}'); \
-      INSTANCES=$(nslookup backend-service.service.consul 2>/dev/null | grep 'Address' | tail -n +2 | awk '{print $3}' | wc -l); \
-      RESPONSE_BODY='{\"client\":\"'$(hostname)'\",\"timestamp\":'$(date +%s)',\"backend\":'$BACKEND_DATA',\"discovery\":{\"method\":\"consul-dns\",\"backend_url\":\"'$BACKEND_URL'\",\"healthy_instances\":'$INSTANCES'}}'; \
+      BACKEND_DATA=$(curl -s -m 2 \"$BACKEND_URL\" 2>/dev/null || echo '{\"error\":\"Backend not reachable\"}'); \
+      RESPONSE_BODY='{\"client\":\"'$(hostname)'\",\"timestamp\":'$(date +%s)',\"backend\":'$BACKEND_DATA',\"discovery\":{\"method\":\"consul-dns\",\"backend_url\":\"'$BACKEND_URL'\"}}'; \
       { \
         echo -e 'HTTP/1.1 200 OK\\r'; \
         echo -e 'Content-Type: application/json\\r'; \
@@ -22,7 +21,6 @@ CMD ["/bin/sh", "-c", "\
         echo -e '\\r'; \
         echo -n \"$RESPONSE_BODY\"; \
       } | nc -l -p 8082 2>/dev/null || true; \
-      sleep 0.01; \
     done \
 "]
 
