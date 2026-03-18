@@ -25,6 +25,10 @@
 - AKS path: run in `ejemplos/02a-kubernetes-local-azure/azure/`
   - `./scripts/azure-setup.sh`, `./scripts/build-and-push-all.sh`, `./scripts/deploy-all.sh`
   - diagnostics live in `scripts/diagnose.sh`, `scripts/cluster-info.sh`, `scripts/test-probes.sh`.
+- Consul + Vault demos: run in `ejemplos/05-consul/`
+  - `scripts/setup-consul.sh` (or `.ps1`), `scripts/setup-vault.sh` (or `.ps1`), `scripts/verify-setup.sh` (or `.ps1`)
+  - 4 progressive demos in `demo-01-discovery/`, `demo-02-health-checks/`, `demo-03-vault-consul/`, `demo-04-dynamic-config/`
+  - All commands documented side-by-side (bash/PowerShell) in consolidated `README.md`.
 
 ## Project-specific conventions to preserve
 - Keep manifests environment-specific; image refs differ by target:
@@ -34,11 +38,12 @@
 - Security posture in `02a` manifests is deliberate: `runAsNonRoot`, `seccompProfile: RuntimeDefault`, `allowPrivilegeEscalation: false`, `capabilities.drop: [ALL]`.
 - Health probes (Quarkus endpoints) are part of AKS reliability setup: `/q/health/live` and `/q/health/ready`.
 - Vault integration uses injector annotations (do not replace with plain env secrets) in `ejemplos/04-vault/deployment-with-vault-annotations.yaml`.
+- **Consul demos** (`ejemplos/05-consul/`) use a single consolidated `README.md` with side-by-side bash/PowerShell commands; `DOCKER-DESKTOP-WINDOWS.md` is kept only for initial Windows setup reference.
 
 ## Integration points and gotchas
 - `expense-client` depends on DNS name `expense-service` and ConfigMap wiring; if client returns empty data, inspect `EXPENSE_SVC` and service endpoints first.
-- Several README snippets reference generic files (e.g., `demo-kafka-microservices.yaml`) that may not exist in that folder; validate against actual directory contents before applying.
 - `spring-kafka-microservices/` is an imported standalone demo (Kafka/Saga) with its own Maven lifecycle; treat it independently from course module scripts.
+- In `ejemplos/05-consul/`, all demos are documented in a single `README.md` with commands for both Linux/macOS (bash) and Windows (PowerShell).
 
 ## How to contribute changes as an AI agent
 - Prefer minimal, surgical edits inside the relevant module; avoid cross-module refactors.
