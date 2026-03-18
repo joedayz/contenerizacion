@@ -1,0 +1,47 @@
+FROM alpine:3.18
+
+# Instalar curl, bind-tools (para nslookup) y netcat
+RUN apk add --no-cache curl bind-tools netcat-openbsd
+
+ENV USER_SERVICE_URL=http://user-service.service.consul:8080
+
+COPY <<'EOF' /start.sh
+#!/bin/sh
+echo '=== API Gateway Starting ==='
+echo 'User Service URL: '$USER_SERVICE_URL
+echo 'Port: 8090'
+
+while true; do
+  {
+    echo -e 'HTTP/1.1 200 OK\r'
+    echo -e 'Content-Type: application/json\r'
+    echo -e 'Connection: close\r'
+    echo -e '\r'
+    
+    # Call user-service via Consul DNS
+    USER_DATA=$(curl -s "$USER_SERVICE_URL" 2>/dev/null || echo '{"error":"Service unavailable"}')
+    INSTANCES=$(nslookup user-service.service.consul 2>/dev/null | grep 'Address' | tail -n +2 | awk '{print $3}' | wc -l)
+    
+    cat << JSON
+{
+  "gateway": {
+    "name": "api-gateway",
+    "instance": "$(hostname)"
+  },
+  "userService": {
+    "discoveredVia": "consul-dns",
+    "url": "$USER_SERVICE_URL",
+    "healthy_instances": $INSTANCES,
+    "data": $USER_DATA
+  }
+}
+JSON
+  } | nc -l -p 8090
+done
+EOF
+
+RUN chmod +x /start.sh
+
+CMD ["/start.sh"]
+
+EXPOSE 8090

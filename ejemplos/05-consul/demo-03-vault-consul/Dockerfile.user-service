@@ -1,0 +1,63 @@
+FROM postgres:15-alpine
+
+# Instalar herramientas necesarias para el servidor HTTP y cliente PostgreSQL
+# Ya incluye psql por defecto
+RUN apk add --no-cache netcat-openbsd
+
+# Script wrapper
+COPY <<'EOF' /start.sh
+#!/bin/sh
+echo '=== User Service Starting ==='
+echo 'Waiting for database credentials from Vault...'
+
+# Esperar a que Vault inyecte los secretos
+while [ ! -f /vault/secrets/database-config.txt ]; do
+  echo 'Waiting for Vault to inject secrets...'
+  sleep 2
+done
+
+echo '✅ Secrets injected by Vault'
+
+# Source las credenciales
+. /vault/secrets/database-config.txt
+
+echo 'Database config:'
+echo '  Host: '$DB_HOST
+echo '  Port: '$DB_PORT
+echo '  Database: '$DB_DATABASE
+echo '  Username: '$DB_USERNAME
+echo '  Password: ********'
+
+# Servidor HTTP en puerto 8080
+echo 'Starting HTTP server on port 8080...'
+
+while true; do
+  {
+    echo -e 'HTTP/1.1 200 OK\r'
+    echo -e 'Content-Type: application/json\r'
+    echo -e 'Connection: close\r'
+    echo -e '\r'
+    
+    # Query users from database
+    USERS=$(PGPASSWORD="$DB_PASSWORD" psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USERNAME" -d "$DB_DATABASE" \
+      -t -c "SELECT COALESCE(json_agg(row_to_json(users)), '[]') FROM users;" 2>/dev/null || echo '[]')
+    
+    cat << JSON
+{
+  "users": $USERS,
+  "source": "$(hostname)",
+  "discovery": {
+    "database": "$DB_HOST (via Consul DNS)",
+    "credentialsFrom": "Vault Agent Injector"
+  }
+}
+JSON
+  } | nc -l -p 8080
+done
+EOF
+
+RUN chmod +x /start.sh
+
+CMD ["/start.sh"]
+
+EXPOSE 8080

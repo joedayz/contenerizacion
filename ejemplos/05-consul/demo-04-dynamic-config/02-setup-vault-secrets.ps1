@@ -6,40 +6,40 @@ Write-Host "=== Configurando Vault para Demo 4 ===" -ForegroundColor Cyan
 Write-Host ""
 
 # Verificar que Vault esté instalado
-$vaultPod = kubectl get pods -n vault -l app.kubernetes.io/name=vault -o jsonpath='{.items[0].metadata.name}' 2>$null
+$vaultPod = & kubectl get pods -n vault -l app.kubernetes.io/name=vault -o jsonpath='{.items[0].metadata.name}' 2>&1
 if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrEmpty($vaultPod)) {
     Write-Host "❌ Vault no está instalado. Ejecuta setup-vault.ps1 primero." -ForegroundColor Red
     exit 1
 }
 
 Write-Host "1. Habilitando Kubernetes auth method (si no está)..." -ForegroundColor Blue
-kubectl exec -n vault $vaultPod -- vault auth enable kubernetes 2>$null
+& kubectl exec -n vault $vaultPod -- vault auth enable kubernetes 2>&1 | Out-Null
 if ($LASTEXITCODE -ne 0) {
     Write-Host "⚠️  Kubernetes auth ya estaba habilitado" -ForegroundColor Yellow
 }
 
 Write-Host "2. Configurando Kubernetes auth..." -ForegroundColor Blue
 $K8S_HOST = "https://10.96.0.1:443"
-$SA_TOKEN = kubectl exec -n vault $vaultPod -- cat /var/run/secrets/kubernetes.io/serviceaccount/token
-$SA_CA_CRT = kubectl exec -n vault $vaultPod -- cat /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+$SA_TOKEN = & kubectl exec -n vault $vaultPod -- cat /var/run/secrets/kubernetes.io/serviceaccount/token
+$SA_CA_CRT = & kubectl exec -n vault $vaultPod -- cat /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
 
-kubectl exec -n vault $vaultPod -- vault write auth/kubernetes/config `
+& kubectl exec -n vault $vaultPod -- vault write auth/kubernetes/config `
     token_reviewer_jwt="$SA_TOKEN" `
     kubernetes_host="$K8S_HOST" `
     kubernetes_ca_cert="$SA_CA_CRT"
 
 Write-Host "3. Habilitando KV secrets engine..." -ForegroundColor Blue
-kubectl exec -n vault $vaultPod -- vault secrets enable -path=demo04 kv-v2 2>$null
+& kubectl exec -n vault $vaultPod -- vault secrets enable -path=demo04 kv-v2 2>&1 | Out-Null
 if ($LASTEXITCODE -ne 0) {
     Write-Host "⚠️  KV secrets engine ya estaba habilitado" -ForegroundColor Yellow
 }
 
 Write-Host "4. Creando secretos sensibles..." -ForegroundColor Blue
-kubectl exec -n vault $vaultPod -- vault kv put demo04/secrets/api `
+& kubectl exec -n vault $vaultPod -- vault kv put demo04/secrets/api `
     api_key=super-secret-api-key-12345 `
     api_secret=top-secret-value-xyz
 
-kubectl exec -n vault $vaultPod -- vault kv put demo04/secrets/database `
+& kubectl exec -n vault $vaultPod -- vault kv put demo04/secrets/database `
     db_password=my-secure-password-456 `
     encryption_key=aes-256-encryption-key
 
@@ -50,13 +50,13 @@ path "demo04/data/secrets/*" {
 }
 '@
 
-kubectl exec -n vault $vaultPod -- sh -c "echo '$POLICY' | vault policy write config-service-policy -"
+& kubectl exec -n vault $vaultPod -- sh -c "echo '$POLICY' | vault policy write config-service-policy -"
 
 Write-Host "6. Creando Kubernetes service account..." -ForegroundColor Blue
-kubectl create serviceaccount config-service --dry-run=client -o yaml | kubectl apply -f -
+& kubectl create serviceaccount config-service --dry-run=client -o yaml | & kubectl apply -f -
 
 Write-Host "7. Vinculando Vault role con service account..." -ForegroundColor Blue
-kubectl exec -n vault $vaultPod -- vault write auth/kubernetes/role/config-service `
+& kubectl exec -n vault $vaultPod -- vault write auth/kubernetes/role/config-service `
     bound_service_account_names=config-service `
     bound_service_account_namespaces=default `
     policies=config-service-policy `

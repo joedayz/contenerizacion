@@ -8,7 +8,7 @@ Write-Host ""
 
 # Port-forward Consul UI
 Write-Host "Consul UI: http://localhost:8500" -ForegroundColor Yellow
-$consulJob = Start-Job -ScriptBlock { kubectl port-forward -n consul svc/consul-ui 8500:80 }
+$consulJob = Start-Job -ScriptBlock { & kubectl port-forward -n consul svc/consul-ui 8500:80 }
 
 # Pequeña pausa para que inicie
 Start-Sleep -Seconds 1
@@ -16,7 +16,7 @@ Start-Sleep -Seconds 1
 # Port-forward Vault UI
 Write-Host "Vault UI:  http://localhost:8200" -ForegroundColor Yellow
 Write-Host "Vault Token: root" -ForegroundColor Yellow
-$vaultJob = Start-Job -ScriptBlock { kubectl port-forward -n vault svc/vault 8200:8200 }
+$vaultJob = Start-Job -ScriptBlock { & kubectl port-forward -n vault svc/vault 8200:8200 }
 
 Write-Host ""
 Write-Host "═══════════════════════════════════════════════════" -ForegroundColor Green

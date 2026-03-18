@@ -6,14 +6,14 @@ Write-Host "=== Configurando Consul KV para Demo 4 ===" -ForegroundColor Cyan
 Write-Host ""
 
 # Verificar que Consul esté instalado
-$consulPod = kubectl get pods -n consul -l component=server -o jsonpath='{.items[0].metadata.name}' 2>$null
+$consulPod = & kubectl get pods -n consul -l component=server -o jsonpath='{.items[0].metadata.name}' 2>&1
 if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrEmpty($consulPod)) {
     Write-Host "❌ Consul no está instalado. Ejecuta setup-consul.ps1 primero." -ForegroundColor Red
     exit 1
 }
 
 Write-Host "Iniciando port-forward temporal a Consul..." -ForegroundColor Blue
-$consulJob = Start-Job -ScriptBlock { kubectl port-forward -n consul svc/consul-server 8500:8500 }
+$consulJob = Start-Job -ScriptBlock { & kubectl port-forward -n consul svc/consul-server 8500:8500 }
 Start-Sleep -Seconds 3
 
 # Verificar si consul CLI está disponible
@@ -31,7 +31,7 @@ $features = @{
 } | ConvertTo-Json
 
 if ($useConsulCLI) {
-    consul kv put demo04/config/features $features
+    & consul kv put demo04/config/features $features
 } else {
     Invoke-RestMethod -Uri "http://localhost:8500/v1/kv/demo04/config/features" `
         -Method Put -Body $features -ContentType "application/json"
@@ -44,7 +44,7 @@ $rateLimit = @{
 } | ConvertTo-Json
 
 if ($useConsulCLI) {
-    consul kv put demo04/config/rate_limiter $rateLimit
+    & consul kv put demo04/config/rate_limiter $rateLimit
 } else {
     Invoke-RestMethod -Uri "http://localhost:8500/v1/kv/demo04/config/rate_limiter" `
         -Method Put -Body $rateLimit -ContentType "application/json"
@@ -57,7 +57,7 @@ $cache = @{
 } | ConvertTo-Json
 
 if ($useConsulCLI) {
-    consul kv put demo04/config/cache $cache
+    & consul kv put demo04/config/cache $cache
 } else {
     Invoke-RestMethod -Uri "http://localhost:8500/v1/kv/demo04/config/cache" `
         -Method Put -Body $cache -ContentType "application/json"
@@ -66,7 +66,7 @@ if ($useConsulCLI) {
 Write-Host ""
 Write-Host "4. Verificando valores creados..." -ForegroundColor Blue
 if ($useConsulCLI) {
-    consul kv get -recurse demo04/
+    & consul kv get -recurse demo04/
 } else {
     $keys = Invoke-RestMethod -Uri "http://localhost:8500/v1/kv/demo04/?recurse" -Method Get
     $keys | ForEach-Object {

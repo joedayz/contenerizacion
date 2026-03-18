@@ -21,14 +21,14 @@ if (-not (Get-Command helm -ErrorAction SilentlyContinue)) {
 }
 
 Write-Host "1. Agregando Consul Helm repo..." -ForegroundColor Blue
-helm repo add hashicorp https://helm.releases.hashicorp.com
-helm repo update
+& helm repo add hashicorp https://helm.releases.hashicorp.com
+& helm repo update
 
 Write-Host "2. Creando namespace consul..." -ForegroundColor Blue
-kubectl create namespace consul --dry-run=client -o yaml | kubectl apply -f -
+& kubectl create namespace consul --dry-run=client -o yaml | & kubectl apply -f -
 
 Write-Host "3. Instalando Consul (puede tomar 2-3 minutos)..." -ForegroundColor Blue
-helm upgrade --install consul hashicorp/consul `
+& helm upgrade --install consul hashicorp/consul `
   --namespace consul `
   --set global.name=consul `
   --set server.replicas=1 `
@@ -49,25 +49,25 @@ helm upgrade --install consul hashicorp/consul `
   --timeout 5m
 
 Write-Host "4. Esperando a que Consul esté listo..." -ForegroundColor Blue
-kubectl wait --for=condition=Ready pod -l app=consul -n consul --timeout=300s
+& kubectl wait --for=condition=Ready pod -l app=consul -n consul --timeout=300s
 
 Write-Host "5. Configurando CoreDNS para Consul..." -ForegroundColor Blue
 # Obtener la IP del servicio consul-dns
-$CONSUL_DNS_IP = kubectl get svc consul-dns -n consul -o jsonpath='{.spec.clusterIP}'
+$CONSUL_DNS_IP = & kubectl get svc consul-dns -n consul -o jsonpath='{.spec.clusterIP}'
 Write-Host "Consul DNS IP: $CONSUL_DNS_IP" -ForegroundColor Cyan
 
 # Verificar si ya existe la configuración
-$hasConsulConfig = kubectl get cm coredns -n kube-system -o yaml | Select-String -Pattern "consul:53"
+$hasConsulConfig = & kubectl get cm coredns -n kube-system -o yaml | Select-String -Pattern "consul:53"
 if ($hasConsulConfig) {
     Write-Host "CoreDNS ya tiene configuración de Consul, omitiendo..." -ForegroundColor Yellow
 } else {
     Write-Host "Configurando CoreDNS para reenviar consultas .consul..." -ForegroundColor Cyan
     
     # Hacer backup
-    kubectl get cm coredns -n kube-system -o yaml | Out-File -FilePath "$env:TEMP\coredns-backup.yaml"
+    & kubectl get cm coredns -n kube-system -o yaml | Out-File -FilePath "$env:TEMP\coredns-backup.yaml"
     
     # Obtener el Corefile actual
-    $COREFILE = kubectl get cm coredns -n kube-system -o jsonpath='{.data.Corefile}'
+    $COREFILE = & kubectl get cm coredns -n kube-system -o jsonpath='{.data.Corefile}'
     
     # Añadir configuración de Consul antes del bloque principal
     $NEW_COREFILE = @"
@@ -80,19 +80,19 @@ $COREFILE
 "@
     
     # Actualizar ConfigMap
-    $NEW_COREFILE | kubectl create cm coredns --from-file=Corefile=/dev/stdin `
-      --dry-run=client -o yaml | kubectl replace -f - -n kube-system
+    $NEW_COREFILE | & kubectl create cm coredns --from-file=Corefile=/dev/stdin `
+      --dry-run=client -o yaml | & kubectl replace -f - -n kube-system
     
     # Reiniciar CoreDNS
-    kubectl rollout restart deployment coredns -n kube-system
-    kubectl rollout status deployment coredns -n kube-system --timeout=60s
+    & kubectl rollout restart deployment coredns -n kube-system
+    & kubectl rollout status deployment coredns -n kube-system --timeout=60s
     
     Write-Host "✅ CoreDNS configurado para Consul" -ForegroundColor Green
 }
 
 Write-Host "6. Verificando instalación..." -ForegroundColor Blue
-kubectl get pods -n consul
-kubectl get svc -n consul
+& kubectl get pods -n consul
+& kubectl get svc -n consul
 
 Write-Host ""
 Write-Host "═══════════════════════════════════════════════════" -ForegroundColor Green

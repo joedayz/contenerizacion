@@ -18,40 +18,40 @@ function Check {
 }
 
 Write-Host "1. Verificando Consul..." -ForegroundColor Yellow
-$consulNs = kubectl get namespace consul 2>$null
+$consulNs = & kubectl get namespace consul 2>&1
 Check "Namespace consul existe" ($LASTEXITCODE -eq 0)
 
-$consulPod = kubectl get pods -n consul 2>$null | Select-String "consul-server.*Running"
+$consulPod = & kubectl get pods -n consul 2>&1 | Select-String "consul-server.*Running"
 Check "Consul server está corriendo" ($null -ne $consulPod)
 
-$consulSvc = kubectl get svc -n consul 2>$null | Select-String "consul-server"
+$consulSvc = & kubectl get svc -n consul 2>&1 | Select-String "consul-server"
 Check "Consul service existe" ($null -ne $consulSvc)
 
-$consulUI = kubectl get svc -n consul 2>$null | Select-String "consul-ui"
+$consulUI = & kubectl get svc -n consul 2>&1 | Select-String "consul-ui"
 Check "Consul UI service existe" ($null -ne $consulUI)
 
 Write-Host ""
 Write-Host "2. Verificando Vault..." -ForegroundColor Yellow
-$vaultNs = kubectl get namespace vault 2>$null
+$vaultNs = & kubectl get namespace vault 2>&1
 Check "Namespace vault existe" ($LASTEXITCODE -eq 0)
 
-$vaultPod = kubectl get pods -n vault 2>$null | Select-String "vault-0.*Running"
+$vaultPod = & kubectl get pods -n vault 2>&1 | Select-String "vault-0.*Running"
 Check "Vault server está corriendo" ($null -ne $vaultPod)
 
-$vaultInjector = kubectl get pods -n vault 2>$null | Select-String "vault-agent-injector.*Running"
+$vaultInjector = & kubectl get pods -n vault 2>&1 | Select-String "vault-agent-injector.*Running"
 Check "Vault agent injector está corriendo" ($null -ne $vaultInjector)
 
-$vaultSvc = kubectl get svc -n vault 2>$null | Select-String "vault"
+$vaultSvc = & kubectl get svc -n vault 2>&1 | Select-String "vault"
 Check "Vault service existe" ($null -ne $vaultSvc)
 
 Write-Host ""
 Write-Host "3. Verificando conectividad..." -ForegroundColor Yellow
 
 # Port-forward temporal para verificar
-$consulJob = Start-Job -ScriptBlock { kubectl port-forward -n consul svc/consul-server 8500:8500 }
+$consulJob = Start-Job -ScriptBlock { & kubectl port-forward -n consul svc/consul-server 8500:8500 }
 Start-Sleep -Seconds 3
 
-$vaultJob = Start-Job -ScriptBlock { kubectl port-forward -n vault svc/vault 8200:8200 }
+$vaultJob = Start-Job -ScriptBlock { & kubectl port-forward -n vault svc/vault 8200:8200 }
 Start-Sleep -Seconds 3
 
 # Verificar Consul
@@ -78,7 +78,7 @@ Remove-Job -Job $vaultJob -ErrorAction SilentlyContinue
 
 Write-Host ""
 Write-Host "4. Verificando resources..." -ForegroundColor Yellow
-$notRunning = kubectl get pods --all-namespaces | Select-String "(consul|vault)" | Select-String -NotMatch "Running"
+$notRunning = & kubectl get pods --all-namespaces 2>&1 | Select-String "(consul|vault)" | Select-String -NotMatch "Running"
 if ($notRunning) {
     Write-Host "❌ Algunos pods no están Running" -ForegroundColor Red
     $notRunning | ForEach-Object { Write-Host $_ -ForegroundColor Red }

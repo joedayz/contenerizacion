@@ -19,15 +19,15 @@ if (-not (Get-Command helm -ErrorAction SilentlyContinue)) {
 }
 
 Write-Host "1. Agregando Vault Helm repo..." -ForegroundColor Blue
-helm repo add hashicorp https://helm.releases.hashicorp.com
-helm repo update
+& helm repo add hashicorp https://helm.releases.hashicorp.com
+& helm repo update
 
 Write-Host "2. Creando namespace vault..." -ForegroundColor Blue
-kubectl create namespace vault --dry-run=client -o yaml | kubectl apply -f -
+& kubectl create namespace vault --dry-run=client -o yaml | & kubectl apply -f -
 
 Write-Host "3. Instalando Vault en dev mode (puede tomar 1-2 minutos)..." -ForegroundColor Blue
 Write-Host "⚠️  NOTA: Dev mode es solo para demos. En producción usa un storage backend real." -ForegroundColor Yellow
-helm upgrade --install vault hashicorp/vault `
+& helm upgrade --install vault hashicorp/vault `
   --namespace vault `
   --set "server.dev.enabled=true" `
   --set "server.dev.devRootToken=root" `
@@ -39,11 +39,11 @@ helm upgrade --install vault hashicorp/vault `
   --timeout 5m
 
 Write-Host "4. Esperando a que Vault esté listo..." -ForegroundColor Blue
-kubectl wait --for=condition=Ready pod -l app.kubernetes.io/name=vault -n vault --timeout=300s
+& kubectl wait --for=condition=Ready pod -l app.kubernetes.io/name=vault -n vault --timeout=300s
 
 Write-Host "5. Verificando instalación..." -ForegroundColor Blue
-kubectl get pods -n vault
-kubectl get svc -n vault
+& kubectl get pods -n vault
+& kubectl get svc -n vault
 
 Write-Host ""
 Write-Host "═══════════════════════════════════════════════════" -ForegroundColor Green
