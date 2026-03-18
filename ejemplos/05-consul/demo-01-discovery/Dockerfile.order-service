@@ -1,0 +1,54 @@
+FROM alpine:3.18
+
+# Instalar curl para hacer requests a product-service
+RUN apk add --no-cache curl
+
+# Microservicio simulado de órdenes que consume product-service vía Consul DNS
+# En producción, esto sería una aplicación Quarkus real
+
+ENV PRODUCT_SERVICE_URL=http://product-service.service.consul:8080
+
+CMD ["/bin/sh", "-c", "\
+    echo 'Starting Order Service on port 8081...' && \
+    echo 'Product Service URL: '$PRODUCT_SERVICE_URL && \
+    echo 'Hostname: '$(hostname) && \
+    fetch_products() { \
+      PRODUCTS=$(curl -s \"$PRODUCT_SERVICE_URL\" 2>/dev/null || echo '{\"error\":\"Could not reach product-service\"}'); \
+      echo \"$PRODUCTS\"; \
+    }; \
+    while true; do \
+      { \
+        echo -e 'HTTP/1.1 200 OK\\r'; \
+        echo -e 'Content-Type: application/json\\r'; \
+        echo -e 'Connection: close\\r'; \
+        echo -e '\\r'; \
+        PRODUCTS=$(fetch_products); \
+        cat << ORDERS\n\
+{\n\
+  \"orders\": [\n\
+    {\n\
+      \"orderId\": 1,\n\
+      \"productId\": 1,\n\
+      \"quantity\": 2,\n\
+      \"status\": \"pending\"\n\
+    },\n\
+    {\n\
+      \"orderId\": 2,\n\
+      \"productId\": 2,\n\
+      \"quantity\": 1,\n\
+      \"status\": \"shipped\"\n\
+    }\n\
+  ],\n\
+  \"discoveryInfo\": {\n\
+    \"method\": \"consul-dns\",\n\
+    \"productServiceUrl\": \"$PRODUCT_SERVICE_URL\",\n\
+    \"resolvedFrom\": \"$(hostname)\"\n\
+  },\n\
+  \"availableProducts\": $PRODUCTS\n\
+}\n\
+ORDERS\n\
+      } | nc -l -p 8081; \
+    done \
+"]
+
+EXPOSE 8081

@@ -33,74 +33,8 @@ spec:
     spec:
       containers:
       - name: order-service
-        image: curlimages/curl:8.1.2
-        command:
-          - /bin/sh
-          - -c
-          - |
-            # Simular un microservicio de órdenes que consume product-service
-            cat > /tmp/server.sh << 'EOF'
-            #!/bin/sh
-            echo "Starting Order Service on port 8081..."
-            echo "Product Service URL: $PRODUCT_SERVICE_URL"
-            
-            # Función para hacer requests a product-service
-            fetch_products() {
-              PRODUCTS=$(curl -s "$PRODUCT_SERVICE_URL/api/products" 2>/dev/null || echo '{"error":"Could not reach product-service"}')
-              echo "$PRODUCTS"
-            }
-            
-            while true; do
-              {
-                REQUEST=$(timeout 1 nc -l -p 8081)
-                
-                echo -e "HTTP/1.1 200 OK\r"
-                echo -e "Content-Type: application/json\r"
-                echo -e "Connection: close\r"
-                echo -e "\r"
-                
-                if echo "$REQUEST" | grep -q "GET /api/orders/products"; then
-                  # Proxy directo a products
-                  fetch_products
-                elif echo "$REQUEST" | grep -q "GET /api/orders"; then
-                  # Órdenes que incluyen info de productos
-                  PRODUCTS=$(fetch_products)
-                  cat << ORDERS
-            {
-              "orders": [
-                {
-                  "orderId": 1,
-                  "productId": 1,
-                  "quantity": 2,
-                  "status": "pending"
-                },
-                {
-                  "orderId": 2,
-                  "productId": 2,
-                  "quantity": 1,
-                  "status": "shipped"
-                }
-              ],
-              "discoveryInfo": {
-                "method": "consul-dns",
-                "productServiceUrl": "$PRODUCT_SERVICE_URL",
-                "resolvedFrom": "$(hostname)"
-              },
-              "availableProducts": $PRODUCTS
-            }
-            ORDERS
-                elif echo "$REQUEST" | grep -q "GET /q/health"; then
-                  # Health check
-                  echo '{"status":"UP","checks":[]}'
-                else
-                  echo '{"error":"Not found","endpoints":["/api/orders","/api/orders/products","/q/health"]}'
-                fi
-              } | nc -l -p 8081 -q 1 2>/dev/null
-            done
-            EOF
-            
-            chmod +x /tmp/server.sh
-            /tmp/server.sh
+        image: localhost/order-service:latest
+        imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 8081
           name: http
@@ -109,16 +43,14 @@ spec:
         - name: PRODUCT_SERVICE_URL
           value: "http://product-service.service.consul:8080"
         livenessProbe:
-          httpGet:
-            path: /q/health
+          tcpSocket:
             port: 8081
-          initialDelaySeconds: 5
+          initialDelaySeconds: 10
           periodSeconds: 10
         readinessProbe:
-          httpGet:
-            path: /q/health
+          tcpSocket:
             port: 8081
-          initialDelaySeconds: 3
+          initialDelaySeconds: 5
           periodSeconds: 5
         resources:
           requests:

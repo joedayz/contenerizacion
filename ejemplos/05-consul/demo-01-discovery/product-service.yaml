@@ -32,37 +32,8 @@ spec:
     spec:
       containers:
       - name: product-service
-        image: quay.io/quarkus/quarkus-micro-image:2.0
-        command: 
-          - /bin/sh
-          - -c
-          - |
-            # Simular un microservicio de productos simple
-            # En producción, esto sería tu aplicación Quarkus real
-            cat > /tmp/server.sh << 'EOF'
-            #!/bin/sh
-            echo "Starting Product Service on port 8080..."
-            
-            # Función para servir requests HTTP simples
-            while true; do
-              {
-                echo -e "HTTP/1.1 200 OK\r"
-                echo -e "Content-Type: application/json\r"
-                echo -e "Connection: close\r"
-                echo -e "\r"
-                if echo "$REQUEST" | grep -q "GET /api/products"; then
-                  echo '{"products":[{"id":1,"name":"Laptop","price":999.99},{"id":2,"name":"Mouse","price":29.99},{"id":3,"name":"Keyboard","price":79.99}],"source":"'$(hostname)'"}'
-                elif echo "$REQUEST" | grep -q "GET /q/health"; then
-                  echo '{"status":"UP","checks":[]}'
-                else
-                  echo '{"error":"Not found"}'
-                fi
-              } | nc -l -p 8080 -q 1
-            done
-            EOF
-            
-            chmod +x /tmp/server.sh
-            /tmp/server.sh
+        image: localhost/product-service:latest
+        imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 8080
           name: http

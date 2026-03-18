@@ -1,0 +1,22 @@
+FROM alpine:3.18
+
+# Microservicio simulado de productos con nc (netcat)
+# En producción, esto sería una aplicación Quarkus real
+
+RUN echo "Building product-service demo image..."
+
+CMD ["/bin/sh", "-c", "\
+    echo 'Starting Product Service on port 8080...' && \
+    echo 'Hostname: '$(hostname) && \
+    while true; do \
+      { \
+        echo -e 'HTTP/1.1 200 OK\\r'; \
+        echo -e 'Content-Type: application/json\\r'; \
+        echo -e 'Connection: close\\r'; \
+        echo -e '\\r'; \
+        echo '{\"products\":[{\"id\":1,\"name\":\"Laptop\",\"price\":999.99},{\"id\":2,\"name\":\"Mouse\",\"price\":29.99},{\"id\":3,\"name\":\"Keyboard\",\"price\":79.99}],\"source\":\"'$(hostname)'\"}'; \
+      } | nc -l -p 8080; \
+    done \
+"]
+
+EXPOSE 8080

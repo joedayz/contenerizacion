@@ -55,7 +55,43 @@ helm upgrade --install consul hashicorp/consul \
 echo -e "${BLUE}4. Esperando a que Consul esté listo...${NC}"
 kubectl wait --for=condition=Ready pod -l app=consul -n consul --timeout=300s
 
-echo -e "${BLUE}5. Verificando instalación...${NC}"
+echo -e "${BLUE}5. Configurando CoreDNS para Consul...${NC}"
+# Obtener la IP del servicio consul-dns
+CONSUL_DNS_IP=$(kubectl get svc consul-dns -n consul -o jsonpath='{.spec.clusterIP}')
+echo "Consul DNS IP: $CONSUL_DNS_IP"
+
+# Verificar si ya existe la configuración
+if kubectl get cm coredns -n kube-system -o yaml | grep -q "consul:53"; then
+  echo "CoreDNS ya tiene configuración de Consul, omitiendo..."
+else
+  echo "Configurando CoreDNS para reenviar consultas .consul..."
+  
+  # Hacer backup
+  kubectl get cm coredns -n kube-system -o yaml > /tmp/coredns-backup.yaml
+  
+  # Obtener el Corefile actual
+  COREFILE=$(kubectl get cm coredns -n kube-system -o jsonpath='{.data.Corefile}')
+  
+  # Añadir configuración de Consul antes del bloque principal
+  NEW_COREFILE="consul:53 {
+    errors
+    cache 30
+    forward . ${CONSUL_DNS_IP}
+  }
+  $COREFILE"
+  
+  # Actualizar ConfigMap
+  kubectl create cm coredns --from-literal=Corefile="$NEW_COREFILE" \
+    --dry-run=client -o yaml | kubectl replace -f - -n kube-system
+  
+  # Reiniciar CoreDNS
+  kubectl rollout restart deployment coredns -n kube-system
+  kubectl rollout status deployment coredns -n kube-system --timeout=60s
+  
+  echo "✅ CoreDNS configurado para Consul"
+fi
+
+echo -e "${BLUE}6. Verificando instalación...${NC}"
 kubectl get pods -n consul
 kubectl get svc -n consul
 
