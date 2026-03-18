@@ -93,10 +93,10 @@ if ($ERRORS -eq 0) {
     Write-Host "✅ Todo está listo para las demos!" -ForegroundColor Green
     Write-Host ""
     Write-Host "Próximos pasos:" -ForegroundColor Yellow
-    Write-Host "  1. Demo 1: cd ..\demo-01-discovery; kubectl apply -f ." -ForegroundColor Cyan
-    Write-Host "  2. Demo 2: cd ..\demo-02-health-checks; kubectl apply -f ." -ForegroundColor Cyan
-    Write-Host "  3. Demo 3: cd ..\demo-03-vault-consul; .\01-setup-vault.ps1; kubectl apply -f ." -ForegroundColor Cyan
-    Write-Host "  4. Demo 4: cd ..\demo-04-dynamic-config; .\01-setup-consul-kv.ps1; kubectl apply -f ." -ForegroundColor Cyan
+    Write-Host "  1. Demo 1: cd ../demo-01-discovery; kubectl apply -f ." -ForegroundColor Cyan
+    Write-Host "  2. Demo 2: cd ../demo-02-health-checks; kubectl apply -f ." -ForegroundColor Cyan
+    Write-Host "  3. Demo 3: cd ../demo-03-vault-consul; .\01-setup-vault.ps1; kubectl apply -f ." -ForegroundColor Cyan
+    Write-Host "  4. Demo 4: cd ../demo-04-dynamic-config; .\01-setup-consul-kv.ps1; kubectl apply -f ." -ForegroundColor Cyan
 } else {
     Write-Host "❌ Hay $ERRORS errores. Por favor revisa la configuración." -ForegroundColor Red
     Write-Host ""

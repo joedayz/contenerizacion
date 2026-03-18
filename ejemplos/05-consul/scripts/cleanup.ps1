@@ -13,17 +13,17 @@ if ($response -ne "y" -and $response -ne "Y") {
 
 Write-Host ""
 Write-Host "1. Limpiando Demo 1 (Service Discovery)..." -ForegroundColor Yellow
-kubectl delete -f ..\demo-01-discovery\ --ignore-not-found=true
+kubectl delete -f ../demo-01-discovery/ --ignore-not-found=true
 
 Write-Host "2. Limpiando Demo 2 (Health Checks)..." -ForegroundColor Yellow
-kubectl delete -f ..\demo-02-health-checks\ --ignore-not-found=true
+kubectl delete -f ../demo-02-health-checks/ --ignore-not-found=true
 
 Write-Host "3. Limpiando Demo 3 (Vault + Consul)..." -ForegroundColor Yellow
-kubectl delete -f ..\demo-03-vault-consul\ --ignore-not-found=true
+kubectl delete -f ../demo-03-vault-consul/ --ignore-not-found=true
 kubectl delete sa user-service --ignore-not-found=true
 
 Write-Host "4. Limpiando Demo 4 (Dynamic Config)..." -ForegroundColor Yellow
-kubectl delete -f ..\demo-04-dynamic-config\config-service.yaml --ignore-not-found=true
+kubectl delete -f ../demo-04-dynamic-config/config-service.yaml --ignore-not-found=true 2>$null
 kubectl delete sa config-service --ignore-not-found=true
 
 Write-Host "5. Limpiando Consul KV..." -ForegroundColor Yellow

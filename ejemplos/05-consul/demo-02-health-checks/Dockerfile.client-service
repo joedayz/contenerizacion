@@ -1,0 +1,41 @@
+FROM alpine:3.18
+
+# Instalar curl para hacer requests a backend-service
+RUN apk add --no-cache curl bind-tools
+
+# Cliente que consume backend-service vía Consul DNS
+ENV BACKEND_URL=http://backend-service.service.consul:8080
+
+CMD ["/bin/sh", "-c", "\
+    echo '=== Client Service Starting ===' && \
+    echo 'Backend URL: '$BACKEND_URL && \
+    echo 'Hostname: '$(hostname) && \
+    call_backend() { \
+      RESPONSE=$(curl -s \"$BACKEND_URL\" 2>/dev/null || echo '{\"error\":\"Backend not reachable\"}'); \
+      echo \"$RESPONSE\"; \
+    }; \
+    while true; do \
+      { \
+        echo -e 'HTTP/1.1 200 OK\\r'; \
+        echo -e 'Content-Type: application/json\\r'; \
+        echo -e 'Connection: close\\r'; \
+        echo -e '\\r'; \
+        BACKEND_DATA=$(call_backend); \
+        INSTANCES=$(nslookup backend-service.service.consul 2>/dev/null | grep 'Address' | tail -n +2 | awk '{print $3}' | wc -l); \
+        cat << RESPONSE\n\
+{\n\
+  \"client\": \"$(hostname)\",\n\
+  \"timestamp\": $(date +%s),\n\
+  \"backend\": $BACKEND_DATA,\n\
+  \"discovery\": {\n\
+    \"method\": \"consul-dns\",\n\
+    \"backend_url\": \"$BACKEND_URL\",\n\
+    \"healthy_instances\": $INSTANCES\n\
+  }\n\
+}\n\
+RESPONSE\n\
+      } | nc -l -p 8082; \
+    done \
+"]
+
+EXPOSE 8082

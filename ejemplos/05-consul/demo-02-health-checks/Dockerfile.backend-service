@@ -1,0 +1,27 @@
+FROM alpine:3.18
+
+# Backend service con health checks configurables
+# Simula un servicio que puede volverse "unhealthy" para demostrar
+# cómo Consul deja de enviar tráfico a instancias no saludables
+
+CMD ["/bin/sh", "-c", "\
+    echo '=== Backend Service Starting ===' && \
+    echo 'Hostname: '$(hostname) && \
+    echo 'Port: 8080' && \
+    rm -f /tmp/unhealthy && \
+    while true; do \
+      { \
+        echo -e 'HTTP/1.1 200 OK\\r'; \
+        echo -e 'Content-Type: application/json\\r'; \
+        echo -e 'Connection: close\\r'; \
+        echo -e '\\r'; \
+        if [ -f /tmp/unhealthy ]; then \
+          echo '{\"instance\":\"'$(hostname)'\",\"timestamp\":'$(date +%s)',\"status\":\"unhealthy\",\"data\":[]}'; \
+        else \
+          echo '{\"instance\":\"'$(hostname)'\",\"timestamp\":'$(date +%s)',\"status\":\"healthy\",\"data\":[1,2,3,4,5]}'; \
+        fi \
+      } | nc -l -p 8080; \
+    done \
+"]
+
+EXPOSE 8080

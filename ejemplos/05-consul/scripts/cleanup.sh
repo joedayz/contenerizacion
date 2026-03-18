@@ -29,7 +29,7 @@ kubectl delete -f ../demo-03-vault-consul/ --ignore-not-found=true
 kubectl delete sa user-service --ignore-not-found=true
 
 echo -e "${YELLOW}4. Limpiando Demo 4 (Dynamic Config)...${NC}"
-kubectl delete -f ../demo-04-dynamic-config/config-service.yaml --ignore-not-found=true
+kubectl delete -f ../demo-04-dynamic-config/config-service.yaml --ignore-not-found=true 2>/dev/null || true
 kubectl delete sa config-service --ignore-not-found=true
 
 echo -e "${YELLOW}5. Limpiando Consul KV...${NC}"
