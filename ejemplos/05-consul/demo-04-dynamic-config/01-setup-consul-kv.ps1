@@ -77,7 +77,7 @@ if ($useConsulCLI) {
 }
 
 # Cleanup
-Stop-Job-Job $consulJob -ErrorAction SilentlyContinue
+Stop-Job $consulJob -ErrorAction SilentlyContinue
 Remove-Job -Job $consulJob -ErrorAction SilentlyContinue
 
 Write-Host ""
