@@ -102,7 +102,7 @@ kubectl port-forward svc/client-service 8082:8082
 
 ### Paso 4: Probar con todas las instancias saludables
 
-```bash
+```powershell
 # Hacer múltiples requests para ver distribución
 1..10 | ForEach-Object { curl.exe -s http://localhost:8082/api/requests | jq -r ".backend" }
 ```
@@ -118,29 +118,28 @@ kubectl port-forward svc/client-service 8082:8082
 
 ### Paso 5: Simular falla en un backend
 
-```bash
+```powershell
 # Obtener nombre de un pod
-POD=$(kubectl get pods -l app=backend-service -o jsonpath='{.items[0].metadata.name}')
-echo "Marcando como no saludable: $POD"
+$POD = kubectl get pods -l app=backend-service -o jsonpath='{.items[0].metadata.name}'
+Write-Host "Marcando como no saludable: $POD"
 
 # Marcar ese pod como no saludable
-kubectl exec $POD -- sh -c "touch /tmp/unhealthy"
+kubectl exec $POD -- sh -c 'touch /tmp/unhealthy'
 
 # Esperar 10-15 segundos para que Consul detecte la falla
-sleep 15
+Start-Sleep -Seconds 15
 
 # Verificar en Consul
-kubectl exec -n consul consul-server-0 -- \
-  consul catalog nodes -service=backend-service -detailed
+kubectl exec -n consul consul-server-0 -- consul catalog nodes -service=backend-service -detailed
 ```
 
 ### Paso 6: Observar exclusión automática
 
-```bash
+```powershell
 # Hacer requests nuevamente
-for i in {1..10}; do
-  curl -s http://localhost:8082/api/requests | jq '.backend'
-done
+1..10 | ForEach-Object {
+  curl.exe -s http://localhost:8082/api/requests | jq '.backend'
+}
 ```
 
 **Resultado esperado**: Solo verás las 2 instancias saludables. La instancia con falla NO recibe tráfico.
@@ -154,17 +153,20 @@ done
 
 ### Paso 7: Recuperar el backend
 
-```bash
+```powershell
+# Si no tienes la variable, vuelve a tomar un pod de backend
+$POD = kubectl get pods -l app=backend-service -o jsonpath='{.items[0].metadata.name}'
+
 # Recuperar el pod
-kubectl exec $POD -- sh -c "rm -f /tmp/unhealthy"
+kubectl exec $POD -- sh -c 'rm -f /tmp/unhealthy'
 
 # Esperar 10-15 segundos
-sleep 15
+Start-Sleep -Seconds 15
 
 # Verificar recuperación
-for i in {1..10}; do
-  curl -s http://localhost:8082/api/requests | jq '.backend'
-done
+1..10 | ForEach-Object {
+  curl.exe -s http://localhost:8082/api/requests | jq '.backend'
+}
 ```
 
 **Resultado**: Las 3 instancias vuelven al pool de distribución.
