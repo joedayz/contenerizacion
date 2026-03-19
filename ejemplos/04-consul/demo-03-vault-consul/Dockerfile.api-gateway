@@ -38,6 +38,9 @@ JSON
 done
 EOF
 
+# Normalizar CRLF->LF para evitar errores al ejecutar /start.sh en Linux
+RUN sed -i 's/\r$//' /start.sh
+
 RUN chmod +x /start.sh
 
 CMD ["/start.sh"]

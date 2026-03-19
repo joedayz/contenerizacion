@@ -109,13 +109,15 @@ kubectl get pods -l app=user-service
 
 ### Paso 4: Verificar inyección de secretos
 
-```bash
-# Ver logs del vault-agent
-POD=$(kubectl get pods -l app=user-service -o jsonpath='{.items[0].metadata.name}')
+```powershell
+# 1. Ver logs del vault-agent-init
+$POD = kubectl get pods -l app=user-service -o jsonpath='{.items[0].metadata.name}'
 kubectl logs $POD -c vault-agent-init
 
-# Ver secretos inyectados (deben estar en /vault/secrets/)
+# 2. Ver secretos inyectados
 kubectl exec $POD -c user-service -- ls -la /vault/secrets/
+
+# 3. Ver contenido del archivo de configuración
 kubectl exec $POD -c user-service -- cat /vault/secrets/database-config.txt
 ```
 
@@ -136,20 +138,18 @@ kubectl port-forward svc/api-gateway 8090:8090
 
 ### Paso 6: Probar la integración completa
 
-```bash
-# 1. Crear un usuario
-curl -X POST http://localhost:8090/api/users \
-  -H "Content-Type: application/json" \
-  -d '{"name":"Alice","email":"alice@example.com"}'
+```powershell
+# 1. Crear usuario
+irm http://localhost:8090/api/users -Method POST -ContentType "application/json" -Body '{"name":"Alice","email":"alice@example.com"}'
 
 # 2. Listar usuarios
-curl http://localhost:8090/api/users
+irm http://localhost:8090/api/users
 
-# 3. Obtener un usuario específico
-curl http://localhost:8090/api/users/1
+# 3. Obtener usuario específico
+irm http://localhost:8090/api/users/1
 
-# 4. Verificar que usa Consul para discovery
-curl http://localhost:8090/api/discovery/info
+# 4. Info de Consul discovery
+irm http://localhost:8090/api/discovery/info
 ```
 
 **Salida esperada de /api/discovery/info**:
