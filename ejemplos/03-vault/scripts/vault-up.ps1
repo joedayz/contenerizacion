@@ -2,27 +2,27 @@
 #   - Helm install en dev mode con Vault Agent Injector
 #   - Kubernetes auth method
 #   - Secretos de ejemplo (mi-app/db, expense/db)
-#   - Políticas y roles para los deployments de demo
+#   - Politicas y roles para los deployments de demo
 #
 # Uso: .\vault-up.ps1
 
 $ErrorActionPreference = "Stop"
 
-Write-Host "=== Vault Setup — Docker Desktop ===" -ForegroundColor Cyan
+Write-Host "=== Vault Setup - Docker Desktop ===" -ForegroundColor Cyan
 Write-Host ""
 
-# ── Prerrequisitos ────────────────────────────────────────────────────────────
+# Prerrequisitos
 if (-not (Get-Command kubectl -ErrorAction SilentlyContinue)) {
-    Write-Host "❌ kubectl no está instalado" -ForegroundColor Red
+    Write-Host "ERROR: kubectl no esta instalado" -ForegroundColor Red
     exit 1
 }
 
 if (-not (Get-Command helm -ErrorAction SilentlyContinue)) {
-    Write-Host "❌ helm no está instalado" -ForegroundColor Red
+    Write-Host "ERROR: helm no esta instalado" -ForegroundColor Red
     exit 1
 }
 
-# ── 1. Instalar Vault via Helm ────────────────────────────────────────────────
+# 1. Instalar Vault via Helm
 Write-Host "1. Agregando Vault Helm repo..." -ForegroundColor Blue
 & helm repo add hashicorp https://helm.releases.hashicorp.com
 & helm repo update
@@ -30,45 +30,75 @@ Write-Host "1. Agregando Vault Helm repo..." -ForegroundColor Blue
 Write-Host "2. Creando namespace vault..." -ForegroundColor Blue
 & kubectl create namespace vault --dry-run=client -o yaml | & kubectl apply -f -
 
-Write-Host "3. Instalando Vault en dev mode (puede tardar 2-3 min)..." -ForegroundColor Blue
-Write-Host "   ⚠️  Dev mode: los datos se pierden si el pod se reinicia" -ForegroundColor Yellow
+Write-Host "3. Instalando Vault en dev mode, puede tardar 2-3 min..." -ForegroundColor Blue
+Write-Host "   WARNING: Dev mode, los datos se pierden si el pod se reinicia" -ForegroundColor Yellow
 & helm upgrade --install vault hashicorp/vault `
-  --namespace vault `
-  --set "server.dev.enabled=true" `
-  --set "server.dev.devRootToken=root" `
-  --set "server.dataStorage.enabled=false" `
-  --set "server.service.type=ClusterIP" `
-  --set "server.readinessProbe.enabled=false" `
-  --set "server.livenessProbe.enabled=false" `
-  --set "injector.enabled=true" `
-  --set "injector.replicas=1" `
-  --set "ui.enabled=true" `
-  --set "ui.serviceType=ClusterIP" `
-  --wait `
-  --timeout 5m
+    --namespace vault `
+    --set "server.dev.enabled=true" `
+    --set "server.dev.devRootToken=root" `
+    --set "server.dataStorage.enabled=false" `
+    --set "server.service.type=ClusterIP" `
+    --set "server.readinessProbe.enabled=false" `
+    --set "server.livenessProbe.enabled=false" `
+    --set "injector.enabled=true" `
+    --set "injector.replicas=1" `
+    --set "ui.enabled=true" `
+    --set "ui.serviceType=ClusterIP" `
+    --wait `
+    --timeout 5m
 
-Write-Host "4. Esperando a que Vault esté listo..." -ForegroundColor Blue
+if ($LASTEXITCODE -ne 0) {
+        Write-Host "   Helm upgrade fallo. Intentando uninstall/reinstall..." -ForegroundColor Yellow
+        & helm uninstall vault -n vault 2>$null | Out-Null
+        Start-Sleep -Seconds 3
+
+        & helm upgrade --install vault hashicorp/vault `
+            --namespace vault `
+            --set "server.dev.enabled=true" `
+            --set "server.dev.devRootToken=root" `
+            --set "server.dataStorage.enabled=false" `
+            --set "server.service.type=ClusterIP" `
+            --set "server.readinessProbe.enabled=false" `
+            --set "server.livenessProbe.enabled=false" `
+            --set "injector.enabled=true" `
+            --set "injector.replicas=1" `
+            --set "ui.enabled=true" `
+            --set "ui.serviceType=ClusterIP" `
+            --wait `
+            --timeout 5m
+
+        if ($LASTEXITCODE -ne 0) {
+                throw "Fallo la instalacion/actualizacion de Vault con Helm (tambien en reintento)."
+        }
+}
+
+Write-Host "4. Esperando a que Vault este listo..." -ForegroundColor Blue
 & kubectl wait --for=condition=Ready pod -l app.kubernetes.io/name=vault -n vault --timeout=300s
 
-# ── 2. Configurar Vault via kubectl exec ──────────────────────────────────────
+# 2. Configurar Vault via kubectl exec
 $VAULT_NS  = "vault"
 $VAULT_POD = "vault-0"
 
 Write-Host ""
 Write-Host "5. Habilitando Kubernetes auth method..." -ForegroundColor Blue
-& kubectl exec -n $VAULT_NS $VAULT_POD -- vault auth enable kubernetes 2>$null
-Write-Host "   OK" -ForegroundColor DarkGray
+$authEnableOutput = & kubectl exec -n $VAULT_NS $VAULT_POD -- vault auth enable kubernetes 2>&1 | Out-String
+if ($LASTEXITCODE -eq 0) {
+    Write-Host "   OK" -ForegroundColor Gray
+} elseif ($authEnableOutput -match "path is already in use") {
+    Write-Host "   Ya estaba habilitado" -ForegroundColor Gray
+} else {
+    throw "Fallo habilitando auth kubernetes: $authEnableOutput"
+}
 
 Write-Host "6. Configurando Kubernetes auth..." -ForegroundColor Blue
-$SA_TOKEN = (& kubectl exec -n $VAULT_NS $VAULT_POD -- `
-    cat /var/run/secrets/kubernetes.io/serviceaccount/token)
-$CA_CERT  = (& kubectl exec -n $VAULT_NS $VAULT_POD -- `
-    cat /var/run/secrets/kubernetes.io/serviceaccount/ca.crt)
-
 & kubectl exec -n $VAULT_NS $VAULT_POD -- vault write auth/kubernetes/config `
-    "token_reviewer_jwt=$SA_TOKEN" `
-    kubernetes_host="https://kubernetes.default.svc:443" `
-    "kubernetes_ca_cert=$CA_CERT"
+    token_reviewer_jwt=@/var/run/secrets/kubernetes.io/serviceaccount/token `
+    kubernetes_host=https://kubernetes.default.svc:443 `
+    kubernetes_ca_cert=@/var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+
+if ($LASTEXITCODE -ne 0) {
+    throw "Fallo la configuracion de auth/kubernetes/config."
+}
 
 Write-Host "7. Creando secretos de ejemplo..." -ForegroundColor Blue
 & kubectl exec -n $VAULT_NS $VAULT_POD -- `
@@ -80,20 +110,20 @@ Write-Host "7. Creando secretos de ejemplo..." -ForegroundColor Blue
         "password=S3cret!Vault" `
         "url=jdbc:postgresql://postgres-expense:5432/expensedb"
 
-Write-Host "8. Creando políticas..." -ForegroundColor Blue
-$miAppPolicy = @"
-path "secret/data/mi-app/db" {
-  capabilities = ["read"]
-}
-"@
-$miAppPolicy | & kubectl exec -i -n $VAULT_NS $VAULT_POD -- vault policy write mi-app-policy -
+Write-Host "8. Creando politicas..." -ForegroundColor Blue
+$miAppPolicy = @(
+        'path "secret/data/mi-app/db" {'
+        '  capabilities = ["read"]'
+        '}'
+) -join "`n"
+$miAppPolicy | kubectl exec -i -n $VAULT_NS $VAULT_POD -- vault policy write mi-app-policy -
 
-$expensePolicy = @"
-path "secret/data/expense/db" {
-  capabilities = ["read"]
-}
-"@
-$expensePolicy | & kubectl exec -i -n $VAULT_NS $VAULT_POD -- vault policy write expense-policy -
+$expensePolicy = @(
+        'path "secret/data/expense/db" {'
+        '  capabilities = ["read"]'
+        '}'
+) -join "`n"
+$expensePolicy | kubectl exec -i -n $VAULT_NS $VAULT_POD -- vault policy write expense-policy -
 
 Write-Host "9. Creando roles de Kubernetes auth..." -ForegroundColor Blue
 & kubectl exec -n $VAULT_NS $VAULT_POD -- vault write auth/kubernetes/role/app-con-vault-role `
@@ -114,11 +144,11 @@ Write-Host "9. Creando roles de Kubernetes auth..." -ForegroundColor Blue
     policies=expense-policy `
     ttl=1h
 
-# ── Resumen ───────────────────────────────────────────────────────────────────
+# Resumen
 Write-Host ""
-Write-Host "═══════════════════════════════════════════════════" -ForegroundColor Green
-Write-Host "✅ Vault listo para usar" -ForegroundColor Green
-Write-Host "═══════════════════════════════════════════════════" -ForegroundColor Green
+Write-Host "===================================================" -ForegroundColor Green
+Write-Host "Vault listo para usar" -ForegroundColor Green
+Write-Host "===================================================" -ForegroundColor Green
 Write-Host ""
 Write-Host "  Root token : root" -ForegroundColor Cyan
 Write-Host "  URL interno: http://vault.vault.svc.cluster.local:8200" -ForegroundColor Cyan
