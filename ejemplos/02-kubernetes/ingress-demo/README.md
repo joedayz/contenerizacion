@@ -82,7 +82,7 @@ Luego abre en tu navegador la URL indicada en `HOSTS` del Ingress (por defecto: 
 kubectl port-forward -n ingress-nginx svc/ingress-nginx-controller 8080:80
 ```
 
-Abre `http://localhost:8080` en tu navegador.
+Abre `http://app.localtest.me` en tu navegador.
 
 ## Conceptos clave
 
