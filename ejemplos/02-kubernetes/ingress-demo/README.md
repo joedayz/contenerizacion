@@ -21,7 +21,27 @@ kubectl get ingressclass -A
 kubectl get pods -n ingress-nginx
 ```
 
-Si no ves pods, puede que necesites habilitar el Ingress Controller a través de Docker Desktop Settings (según versión).
+Si no ves pods, hay que habilitar el Ingress Controller.
+
+#### Instalar NGINX Ingress Controller
+```bash
+kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.8.2/deploy/static/provider/cloud/deploy.yaml
+```
+
+#### Esperar a que se desplieguen los pods
+```bash
+kubectl wait --namespace ingress-nginx \
+  --for=condition=ready pod \
+  --selector=app.kubernetes.io/component=controller \
+  --timeout=120s
+```
+
+#### Verificar la instalación
+```bash
+kubectl get ingressclass -A
+kubectl get pods -n ingress-nginx
+kubectl get svc -n ingress-nginx
+```
 
 ### 2. Crear namespace
 ```bash
