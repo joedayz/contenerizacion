@@ -61,6 +61,7 @@ Demostrar una arquitectura completa donde:
 
 ```bash
 # Verificar que Vault y Consul están instalados
+.\build-and-load.ps1
 kubectl get pods -n vault
 kubectl get pods -n consul
 
@@ -74,7 +75,7 @@ cd ../scripts/
 
 ```bash
 # Configurar Vault para la demo
-./01-setup-vault.sh
+./01-setup-vault.ps1
 ```
 
 Este script:
@@ -181,9 +182,9 @@ En `user-service.yaml`:
 annotations:
   vault.hashicorp.com/agent-inject: "true"
   vault.hashicorp.com/role: "user-service-role"
-  vault.hashicorp.com/agent-inject-secret-database-config.txt: "secret/data/demo03/database"
+  vault.hashicorp.com/agent-inject-secret-database-config.txt: "demo03/data/database"
   vault.hashicorp.com/agent-inject-template-database-config.txt: |
-    {{- with secret "secret/data/demo03/database" -}}
+    {{- with secret "demo03/data/database" -}}
     postgresql://{{ .Data.data.username }}:{{ .Data.data.password }}@{{ .Data.data.host }}:{{ .Data.data.port }}/{{ .Data.data.database }}
     {{- end -}}
 ```

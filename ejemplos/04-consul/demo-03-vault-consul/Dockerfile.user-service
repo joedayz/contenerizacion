@@ -56,6 +56,9 @@ JSON
 done
 EOF
 
+# Normalizar CRLF->LF para evitar '/bin/sh^M' en Windows
+RUN sed -i 's/\r$//' /start.sh
+
 RUN chmod +x /start.sh
 
 CMD ["/start.sh"]
