@@ -1,4 +1,4 @@
-# Ejemplos HashiCorp Consul + Vault — Guía 05
+# Ejemplos HashiCorp Consul + Vault — Guía 04
 
 Este directorio contiene **demos prácticas completas** que muestran cómo **Consul** y **Vault** trabajan juntos en un entorno de microservicios en Kubernetes.
 
@@ -86,7 +86,7 @@ Cualquiera de estos:
 <td>
 
 ```bash
-# Desde 05-consul/
+# Desde 04-consul/
 cd scripts/
 
 # Instalar Consul (2-3 min)
@@ -108,7 +108,7 @@ cd scripts/
 <td>
 
 ```powershell
-# Desde 05-consul/
+# Desde 04-consul/
 cd scripts
 
 # Instalar Consul (2-3 min)

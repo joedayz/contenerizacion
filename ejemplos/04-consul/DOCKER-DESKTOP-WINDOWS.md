@@ -108,7 +108,7 @@ Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
 
 ```powershell
 # Navega a la carpeta de scripts
-cd ejemplos\05-consul\scripts
+cd ejemplos\04-consul\scripts
 
 # Ejecutar scripts (el orden importa)
 .\setup-consul.ps1
@@ -146,7 +146,7 @@ O usa nuestro script dedicado:
 
 ```powershell
 # Windows usa backslash
-cd ejemplos\05-consul\scripts
+cd ejemplos\04-consul\scripts
 
 # Pero kubectl acepta ambos
 kubectl apply -f demo-01-discovery/

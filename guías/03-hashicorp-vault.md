@@ -1,9 +1,10 @@
-# Guía 04 — HashiCorp Vault
+# Guía 03 — HashiCorp Vault
 
 ## Objetivos
 
 - Entender el papel de **Vault** en la **gestión de información sensible**.
 - Ver cómo las aplicaciones (y Kubernetes) pueden obtener secretos de forma segura.
+- Explorar demostraciones prácticas en `ejemplos/03-vault/` con comandos para Bash y PowerShell.
 
 ---
 
@@ -62,7 +63,7 @@ El rol de Kubernetes en Vault se configura para asociar un **service account** +
 ## 5. Práctica recomendada (paso a paso con Injector)
 
 1. **Instalar Vault en Kubernetes** (modo laboratorio)  
-   - Sigue la guía `04b-hashicorp-vault-k8s-docker-desktop.md` para desplegar Vault + Vault Agent Injector en el namespace `vault`.
+   - Sigue la guía `03b-hashicorp-vault-k8s-docker-desktop.md` para desplegar Vault + Vault Agent Injector en el namespace `vault`.
 
 2. **Crear un secreto de ejemplo en Vault**  
    - Obtener el token raíz (en modo dev):
@@ -74,11 +75,11 @@ El rol de Kubernetes en Vault se configura para asociar un **service account** +
      - `vault kv put secret/mi-app/db username="appuser" password="changeme"`
 
 3. **Aplicar el Deployment con anotaciones del Injector**  
-   - Usar el manifiesto `ejemplos/04-vault/deployment-with-vault-annotations.yaml`, que ya trae anotaciones típicas como:
+   - Usar el manifiesto `ejemplos/03-vault/deployment-with-vault-annotations.yaml`, que ya trae anotaciones típicas como:
      - `vault.hashicorp.com/agent-inject: "true"`
      - `vault.hashicorp.com/agent-inject-secret-db: "secret/mi-app/db"`
    - Desplegar:
-     - `cd ejemplos/04-vault`
+     - `cd ejemplos/03-vault`
      - `kubectl apply -f deployment-with-vault-annotations.yaml`
      - `kubectl get pods -l app=app-con-vault -w`
 
@@ -91,22 +92,29 @@ El rol de Kubernetes en Vault se configura para asociar un **service account** +
      - `cat /vault/secrets/db`  (o el nombre definido en la plantilla)
    - Debes ver el usuario/contraseña que creaste en `secret/mi-app/db` sin que estén en la imagen ni en ConfigMaps.
 
-5. **Conectar esto con una aplicación real**  
+5. **Demostraciones prácticas**  
+   - Explora `ejemplos/03-vault/` para demostraciones interactivas con comandos en Bash y PowerShell:
+     - Setup de configuración en Vault
+     - Integración Quarkus + Vault Agent Injector
+     - Integración con credenciales de base de datos
+   - Cada demo incluye scripts para ambas plataformas (`.sh` para Linux/macOS, `.ps1` para Windows).
+
+6. **Conectar esto con una aplicación real**  
    - A partir de este Deployment base, puedes:
      - montar `/vault/secrets/db` en tu app (por ejemplo Quarkus, Spring, Node),
      - o parsear ese archivo para cargar variables de entorno al arrancar.
 
-Los manifiestos en `ejemplos/04-vault/` sirven como plantilla para reutilizar las anotaciones del Injector en otras aplicaciones.
+Los manifiestos en `ejemplos/03-vault/` sirven como plantilla para reutilizar las anotaciones del Injector en otras aplicaciones.
 
 ---
 
 ## 6. Relación con el resto del curso
 
-- **Secrets y ConfigMaps (Guía 06)**: en K8s, lo no sensible va a ConfigMap; lo sensible puede venir de Vault y exponerse vía archivo o env en el Pod.
-- **Consul (Guía 05)**: se encarga de descubrimiento y relaciones entre servicios; Vault se centra en “quién puede leer qué secreto”.
+- **Secrets y ConfigMaps (Guía 05)**: en K8s, lo no sensible va a ConfigMap; lo sensible puede venir de Vault y exponerse vía archivo o env en el Pod.
+- **Consul (Guía 04)**: se encarga de descubrimiento y relaciones entre servicios; Vault se centra en "quién puede leer qué secreto".
 
 ---
 
 ## 7. Siguiente paso
 
-En la **Guía 05** veremos **HashiCorp Consul** para relaciones entre servicios (service discovery, health checks y opcionalmente service mesh).
+En la **Guía 04** veremos **HashiCorp Consul** para relaciones entre servicios (service discovery, health checks y opcionalmente service mesh).

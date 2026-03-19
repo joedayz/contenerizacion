@@ -12,7 +12,7 @@ $ErrorActionPreference = "Stop"
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $RootDir = Split-Path -Parent (Split-Path -Parent $ScriptDir)
 
-$dir = "ejemplos/04-vault/quarkus-vault-demo"
+$dir = "ejemplos/03-vault/quarkus-vault-demo"
 $name = "vault-quarkus-demo"
 $dockerfile = "src/main/docker/Dockerfile.jvm"
 

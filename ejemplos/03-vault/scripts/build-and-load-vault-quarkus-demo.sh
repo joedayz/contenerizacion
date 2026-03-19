@@ -6,7 +6,7 @@ set -euo pipefail
 
 CLUSTER_NAME="${CLUSTER_NAME:-microservices}"
 
-# Directorio base: la carpeta ejemplos/04-vault
+# Directorio base: la carpeta ejemplos/03-vault
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 build_and_load() {

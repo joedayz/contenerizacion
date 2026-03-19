@@ -1,4 +1,4 @@
-# Ejemplos HashiCorp Vault — Guía 04
+# Ejemplos HashiCorp Vault — Guía 03
 
 Estos archivos son **referencia** para integrar Vault con Kubernetes. Requieren Vault y (opcionalmente) Vault Agent Injector instalados en el clúster.
 
@@ -139,8 +139,16 @@ El archivo `deployment-with-vault-annotations.yaml` muestra las anotaciones típ
 
 2. **Aplicar el Deployment**:
 
+   **Linux / macOS:**
    ```bash
-   cd ejemplos/04-vault
+   cd ejemplos/03-vault
+   kubectl apply -f deployment-with-vault-annotations.yaml
+   kubectl get pods -l app=app-con-vault -w
+   ```
+
+   **Windows (PowerShell):**
+   ```powershell
+   cd ejemplos/03-vault
    kubectl apply -f deployment-with-vault-annotations.yaml
    kubectl get pods -l app=app-con-vault -w
    ```
@@ -175,7 +183,18 @@ Si ves el contenido del secreto (usuario/contraseña) en `/vault/secrets/db`, si
 
 Proyecto: `quarkus-vault-demo/`
 
-- Endpoint de prueba: `GET /vault-demo/secret`
+**Linux / macOS:**
+```bash
+cd quarkus-vault-demo
+mvn clean package
+docker build -f src/main/docker/Dockerfile.jvm -t vault-quarkus-demo:latest .
+
+kubectl apply -f k8s/vault-quarkus-demo.yaml
+kubectl get pods -l app=vault-quarkus-demo
+```
+
+**Windows (PowerShell):**
+```powershellint de prueba: `GET /vault-demo/secret`
 - Lee secretos desde `/vault/secrets/db` (archivo creado por Vault Agent Injector)
 - No expone la password completa (solo longitud)
 
@@ -200,7 +219,7 @@ No es necesario hacer `kind load docker-image` ni subir la imagen a un registry.
 - **Linux / macOS con Podman**: usa el script `.sh`:
 
   ```bash
-  cd ejemplos/04-vault
+  cd ejemplos/03-vault
   chmod +x scripts/build-and-load-vault-quarkus-demo.sh
   CLUSTER_NAME=microservices ./scripts/build-and-load-vault-quarkus-demo.sh
   ```
@@ -208,7 +227,7 @@ No es necesario hacer `kind load docker-image` ni subir la imagen a un registry.
 - **Windows con Docker Desktop**: usa el script `.ps1` en PowerShell:
 
   ```powershell
-  cd ejemplos/04-vault
+  cd ejemplos/03-vault
   ./scripts/build-and-load-vault-quarkus-demo.ps1 -ClusterName microservices
   ```
 
@@ -321,7 +340,7 @@ docker build -f src/main/docker/Dockerfile.jvm -t expense-service:latest .
 #### Caso B: kind — Linux / macOS (Podman)
 
 ```bash
-cd ejemplos/04-vault
+cd ejemplos/03-vault
 chmod +x scripts/build-and-load-expense-service.sh
 CLUSTER_NAME=microservices ./scripts/build-and-load-expense-service.sh
 ```
@@ -329,7 +348,7 @@ CLUSTER_NAME=microservices ./scripts/build-and-load-expense-service.sh
 #### Caso C: kind — Windows (Docker + PowerShell)
 
 ```powershell
-cd ejemplos\04-vault
+cd ejemplos\03-vault
 .\scripts\build-and-load-expense-service.ps1 -ClusterName microservices
 ```
 
@@ -528,7 +547,17 @@ kubectl delete pods -l app=expense-service
 
 ## Comandos útiles (en un entorno con Vault CLI)
 
+**Linux / macOS (bash)**
+
 ```bash
+vault status
+vault auth list
+vault kv get secret/mi-app/db
+```
+
+**Windows (PowerShell)**
+
+```powershell
 vault status
 vault auth list
 vault kv get secret/mi-app/db

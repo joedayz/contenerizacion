@@ -1,9 +1,10 @@
-# Guía 05 — HashiCorp Consul
+# Guía 04 — HashiCorp Consul
 
 ## Objetivos
 
 - Entender el papel de **Consul** en las **relaciones entre servicios** (service discovery, health checks).
 - Ver cómo los servicios se descubren y se comunican en un entorno distribuido.
+- Explorar demostraciones prácticas en `ejemplos/04-consul/` con comandos para Bash y PowerShell.
 
 ---
 
@@ -63,7 +64,7 @@ Un backend “pedidos” necesita llamar al servicio “usuarios”:
 - Sin Consul: URL fija o variable de entorno con host:puerto del servicio usuarios.
 - Con Consul: el servicio “usuarios” está registrado; “pedidos” resuelve `usuarios.service.consul` (DNS) o llama a la API de Consul y obtiene la lista de instancias. Consul solo devuelve instancias con health check en passing.
 
-Los ejemplos en `ejemplos/05-consul/` muestran definiciones de servicio y health checks.
+Los ejemplos en `ejemplos/04-consul/` muestran definiciones de servicio y health checks.
 
 ---
 
@@ -84,6 +85,17 @@ Los ejemplos en `ejemplos/05-consul/` muestran definiciones de servicio y health
 
 ---
 
-## 8. Siguiente paso
+## 8. Demostraciones prácticas
 
-En la **Guía 06** cerraremos el ciclo con **Secrets y ConfigMaps** en Kubernetes y cómo separar almacenamiento sensible (Secret / Vault) de no sensible (ConfigMap).
+Explora `ejemplos/04-consul/` para demostraciones interactivas con comandos en Bash y PowerShell:
+- Setup e instalación de Consul y Vault
+- Registro de servicios y health checks
+- Descubrimiento de servicios y resolución DNS
+- Integración con Vault para gestionar configuración dinámica
+- Cada demo incluye scripts para ambas plataformas (`.sh` para Linux/macOS, `.ps1` para Windows).
+
+---
+
+## 9. Siguiente paso
+
+En la **Guía 05** cerraremos el ciclo con **Secrets y ConfigMaps** en Kubernetes y cómo separar almacenamiento sensible (Secret / Vault) de no sensible (ConfigMap).

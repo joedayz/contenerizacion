@@ -16,14 +16,14 @@ Demo minimo para mostrar como una app Quarkus consume secretos inyectados por Va
 ## Ejecutar en local sin Kubernetes (opcional para validar rapido)
 
 ```bash
-cd ejemplos/04-vault/quarkus-vault-demo
+cd ejemplos/03-vault/quarkus-vault-demo
 echo 'export DB_USERNAME="demo"' > /tmp/vault-db.env
 echo 'export DB_PASSWORD="demo123"' >> /tmp/vault-db.env
 VAULT_SECRET_FILE=/tmp/vault-db.env mvn quarkus:dev
 ```
 
 ```powershell
-cd ejemplos/04-vault/quarkus-vault-demo
+cd ejemplos/03-vault/quarkus-vault-demo
 "export DB_USERNAME=\"demo\"" | Out-File -FilePath "$env:TEMP\vault-db.env"
 "export DB_PASSWORD=\"demo123\"" | Out-File -Append -FilePath "$env:TEMP\vault-db.env"
 $env:VAULT_SECRET_FILE="$env:TEMP\vault-db.env"
@@ -39,7 +39,7 @@ curl http://localhost:8080/vault-demo/secret
 ## Build de imagen y despliegue en Kubernetes
 
 ```bash
-cd ejemplos/04-vault/quarkus-vault-demo
+cd ejemplos/03-vault/quarkus-vault-demo
 mvn clean package
 docker build -f src/main/docker/Dockerfile.jvm -t vault-quarkus-demo:latest .
 kubectl apply -f k8s/vault-quarkus-demo.yaml
@@ -48,7 +48,7 @@ kubectl port-forward svc/vault-quarkus-demo 8082:8080
 ```
 
 ```powershell
-cd ejemplos/04-vault/quarkus-vault-demo
+cd ejemplos/03-vault/quarkus-vault-demo
 mvn clean package
 docker build -f src/main/docker/Dockerfile.jvm -t vault-quarkus-demo:latest .
 kubectl apply -f k8s/vault-quarkus-demo.yaml
