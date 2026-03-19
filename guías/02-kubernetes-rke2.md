@@ -135,79 +135,143 @@ kubectl get namespaces
 
 En todos los comandos posteriores se recomienda usar `-n curso-local`.
 
-### 7.3 Desplegar los ejemplos
+### 7.3 Ejemplos disponibles
 
-Desde la raíz del repo del curso:
+Cada subdirectorio en `ejemplos/02-kubernetes/` contiene un caso de uso diferente. Consulta el **README.md específico** de cada uno para instrucciones detalladas:
+
+#### 1. **Frontend + Backend** — Comunicación entre Pods
+- **Ruta**: `ejemplos/02-kubernetes/frontend-backend/`
+- **Caso de uso**: Dos aplicaciones que se comunican por Service Discovery.
+- **Instructivo**: Lee [ejemplos/02-kubernetes/frontend-backend/README.md](../../ejemplos/02-kubernetes/frontend-backend/README.md)
 
 ```bash
-# Deployment
-kubectl apply -f ejemplos/02-kubernetes/ingress-demo/demo-kafka-microservices.yaml -n curso-local
-kubectl get deployments -n curso-local
+kubectl apply -f ejemplos/02-kubernetes/frontend-backend/backend.yaml -n curso-local
+kubectl apply -f ejemplos/02-kubernetes/frontend-backend/frontend.yaml -n curso-local
+```
+
+#### 2. **Guestbook** — Redis + Frontend Escalado
+- **Ruta**: `ejemplos/02-kubernetes/guestbook/`
+- **Caso de uso**: Patrón Leader-Follower con Redis y frontend stateless.
+- **Instructivo**: Lee [ejemplos/02-kubernetes/guestbook/README.md](../../ejemplos/02-kubernetes/guestbook/README.md)
+
+```bash
+kubectl apply -f ejemplos/02-kubernetes/guestbook/redis-leader-deployment.yaml -n curso-local
+kubectl apply -f ejemplos/02-kubernetes/guestbook/redis-leader-service.yaml -n curso-local
+kubectl apply -f ejemplos/02-kubernetes/guestbook/redis-follower-deployment.yaml -n curso-local
+kubectl apply -f ejemplos/02-kubernetes/guestbook/redis-follower-service.yaml -n curso-local
+kubectl apply -f ejemplos/02-kubernetes/guestbook/frontend-deployment.yaml -n curso-local
+kubectl apply -f ejemplos/02-kubernetes/guestbook/frontend-service.yaml -n curso-local
+```
+
+#### 3. **Ingress Demo** — Enrutamiento HTTP/HTTPS
+- **Ruta**: `ejemplos/02-kubernetes/ingress-demo/`
+- **Caso de uso**: Exponer aplicaciones con Ingress Controller (path/host-based routing).
+- **Instructivo**: Lee [ejemplos/02-kubernetes/ingress-demo/README.md](../../ejemplos/02-kubernetes/ingress-demo/README.md)
+
+```bash
+kubectl apply -f ejemplos/02-kubernetes/ingress-demo/deployment.yaml -n curso-local
+kubectl apply -f ejemplos/02-kubernetes/ingress-demo/service.yaml -n curso-local
+kubectl apply -f ejemplos/02-kubernetes/ingress-demo/ingress.yaml -n curso-local
+```
+
+#### 4. **Voting App** — Arquitectura Microservicios Completa
+- **Ruta**: `ejemplos/02-kubernetes/voting-app/`
+- **Caso de uso**: Multi-tier con Frontend (vote), Backend (result), Worker, Redis, PostgreSQL.
+- **Instructivo**: Lee [ejemplos/02-kubernetes/voting-app/README.md](../../ejemplos/02-kubernetes/voting-app/README.md)
+
+```bash
+# Datastore
+kubectl apply -f ejemplos/02-kubernetes/voting-app/redis-deployment.yaml -n voting-app
+kubectl apply -f ejemplos/02-kubernetes/voting-app/redis-service.yaml -n voting-app
+kubectl apply -f ejemplos/02-kubernetes/voting-app/db-deployment.yaml -n voting-app
+kubectl apply -f ejemplos/02-kubernetes/voting-app/db-service.yaml -n voting-app
+
+# Aplicación
+kubectl apply -f ejemplos/02-kubernetes/voting-app/vote-deployment.yaml -n voting-app
+kubectl apply -f ejemplos/02-kubernetes/voting-app/vote-service.yaml -n voting-app
+kubectl apply -f ejemplos/02-kubernetes/voting-app/result-deployment.yaml -n voting-app
+kubectl apply -f ejemplos/02-kubernetes/voting-app/result-service.yaml -n voting-app
+kubectl apply -f ejemplos/02-kubernetes/voting-app/worker-deployment.yaml -n voting-app
+```
+
+### 7.4 Verificar despliegue
+
+Tras aplicar cualquiera de los ejemplos anteriores:
+
+```bash
+# Ver pods en ejecución
 kubectl get pods -n curso-local
 
-# Service
-kubectl apply -f ejemplos/02-kubernetes/ingress-demo/service.yaml -n curso-local
+# Ver servicios disponibles
 kubectl get svc -n curso-local
+
+# Ver ingress (solo si aplicas ejemplos con Ingress)
+kubectl get ingress -n curso-local
+
+# Describir un recurso para debugging
+kubectl describe deployment <nombre> -n curso-local
+kubectl logs -l app=<etiqueta> -n curso-local --tail=50
 ```
 
-Para acceder a la aplicación:
+### 7.5 Acceder a las aplicaciones
 
-- **Opción A — port-forward (simple):**
-
-  ```bash
-  kubectl port-forward svc/mi-servicio 8080:80 -n curso-local
-  ```
-
-  Navegador: `http://localhost:8080`
-
-- **Opción B — NodePort (si cambias el Service):**
-
-  - En `service.yaml` usar `type: NodePort`.
-  - Volver a aplicar y mirar el `NODE-PORT`:
-
-  ```bash
-  kubectl apply -f ejemplos/02-kubernetes/ingress-demo/service.yaml -n curso-local
-  kubectl get svc mi-servicio -n curso-local
-  ```
-
-  Navegador: `http://localhost:<NODE_PORT>`
-
-### 7.4 Probar Ingress en local
-
-Si Docker Desktop tiene un Ingress Controller habilitado:
-
-1. Ajustar el host en `ingress.yaml`, por ejemplo:
-
-   ```yaml
-   rules:
-     - host: app.localtest.me
-   ```
-
-   (`localtest.me` apunta a `127.0.0.1`, no requiere tocar `/etc/hosts`).
-
-2. Aplicar:
-
-   ```bash
-   kubectl apply -f ejemplos/02-kubernetes/ingress-demo/ingress.yaml -n curso-local
-   kubectl get ingress -n curso-local
-   ```
-
-3. Navegador: `http://app.localtest.me`
-
-### 7.5 Limpiar recursos
-
-Para borrar solo los recursos del ejemplo:
+**Opción A — Port Forward (recomendado para estudiantes)**
 
 ```bash
-kubectl delete -f ejemplos/02-kubernetes/ingress-demo/ingress.yaml -n curso-local
-kubectl delete -f ejemplos/02-kubernetes/ingress-demo/service.yaml -n curso-local
-kubectl delete -f ejemplos/02-kubernetes/ingress-demo/demo-kafka-microservices.yaml -n curso-local
+# Reemplazar <recurso> con el nombre del service
+kubectl port-forward svc/<recurso> <puerto-local>:<puerto-svc> -n curso-local
 ```
 
-Para borrar el namespace completo:
+Ejemplos:
+- **Frontend-backend**: `kubectl port-forward svc/frontend 3000:80 -n curso-local` → `http://localhost:3000`
+- **Guestbook**: `kubectl port-forward svc/frontend 3000:80 -n curso-local` → `http://localhost:3000`
+- **Voting**: `kubectl port-forward svc/vote 5000:80 -n voting-app` → `http://localhost:5000`
+
+**Opción B — NodePort (si configuras el Service con `type: NodePort`)**
 
 ```bash
-kubectl delete namespace curso-local
+kubectl get svc <recurso> -n curso-local
+# Busca la columna NODE-PORT, ej: 30080
+# Abre: http://localhost:30080
+```
+
+**Opción C — Ingress (para Ingress Demo)**
+
+```bash
+kubectl get ingress -n curso-local
+# Obtén el hostname/IP, ej: app.localtest.me
+# Abre: http://app.localtest.me
+```
+
+### 7.6 Debugging y monitoreo
+
+```bash
+# Logs en tiempo real
+kubectl logs -f <pod-name> -n curso-local
+
+# Exec dentro del pod
+kubectl exec -it <pod-name> -n curso-local -- /bin/bash
+
+# Port-forward a un pod específico
+kubectl port-forward <pod-name> 8080:8080 -n curso-local
+
+# Describir eventos de un pod
+kubectl describe pod <pod-name> -n curso-local
+```
+
+### 7.7 Limpiar recursos
+
+Cada ejemplo incluye instrucciones de limpieza en su **README.md específico**. Consulta:
+
+- [ejemplos/02-kubernetes/frontend-backend/README.md](../../ejemplos/02-kubernetes/frontend-backend/README.md#limpiar) — Limpieza del ejemplo Frontend-Backend.
+- [ejemplos/02-kubernetes/guestbook/README.md](../../ejemplos/02-kubernetes/guestbook/README.md#limpiar) — Limpieza del ejemplo Guestbook.
+- [ejemplos/02-kubernetes/ingress-demo/README.md](../../ejemplos/02-kubernetes/ingress-demo/README.md#limpiar) — Limpieza del ejemplo Ingress Demo.
+- [ejemplos/02-kubernetes/voting-app/README.md](../../ejemplos/02-kubernetes/voting-app/README.md#limpiar) — Limpieza del ejemplo Voting App.
+
+Para borrar todos los namespaces:
+
+```bash
+kubectl delete namespace curso-local voting-app
 ```
 
 ---
