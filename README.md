@@ -11,10 +11,10 @@ Material del **Módulo Principal — Formación Completa** en contenerización: 
 |--------|-----------|------|----------|
 | **01** | Contenerización y Docker | [guías/01-contenerizacion-docker.md](guías/01-contenerizacion-docker.md) | [ejemplos/01-docker/](ejemplos/01-docker/) |
 | **02** | Kubernetes (RKE2) | [guías/02-kubernetes-rke2.md](guías/02-kubernetes-rke2.md) | [ejemplos/02-kubernetes/](ejemplos/02-kubernetes/) |
-| **03** | Rancher | [guías/03-rancher.md](guías/03-rancher.md) | [ejemplos/03-rancher/](ejemplos/03-rancher/) |
-| **04** | HashiCorp Vault | [guías/04-hashicorp-vault.md](guías/04-hashicorp-vault.md) | [ejemplos/04-vault/](ejemplos/04-vault/) |
-| **05** | HashiCorp Consul | [guías/05-hashicorp-consul.md](guías/05-hashicorp-consul.md) | [ejemplos/05-consul/](ejemplos/05-consul/) |
-| **06** | Secrets y ConfigMaps | [guías/06-secrets-configmaps.md](guías/06-secrets-configmaps.md) | [ejemplos/06-secrets-configmaps/](ejemplos/06-secrets-configmaps/) |
+| **03** | Rancher | [guías/rancher.md](guías/rancher.md) | [ejemplos/rancher/](ejemplos/rancher/) |
+| **04** | HashiCorp Vault | [guías/03-hashicorp-vault.md](guías/03-hashicorp-vault.md) | [ejemplos/03-vault/](ejemplos/03-vault/) |
+| **05** | HashiCorp Consul | [guías/04-hashicorp-consul.md](guías/04-hashicorp-consul.md) | [ejemplos/04-consul/](ejemplos/04-consul/) |
+| **06** | Secrets y ConfigMaps | [guías/05-secrets-configmaps.md](guías/05-secrets-configmaps.md) | [ejemplos/05-secrets-configmaps/](ejemplos/05-secrets-configmaps/) |
 
 ## Por qué RKE2, Rancher y HashiCorp
 
@@ -35,6 +35,13 @@ Juntos forman un stack: **RKE2** como orquestador, **Rancher** para operar los c
 1. Sigue las guías en orden (01 → 06).
 2. Ejecuta los ejemplos en la carpeta `ejemplos/` correspondiente a cada guía.
 3. Cada guía incluye objetivos, teoría breve y pasos prácticos.
+
+### Acceso rápido para Vault
+
+- Para la práctica de Vault, usa el flujo automatizado en `ejemplos/03-vault/README.md`.
+- Setup completo: `scripts/vault-up.sh` (Linux/macOS) o `scripts/vault-up.ps1` (Windows).
+- Teardown completo: `scripts/vault-down.sh` (Linux/macOS) o `scripts/vault-down.ps1` (Windows).
+- Limpieza parcial (sin desinstalar Vault): `scripts/cleanup-demos.sh` o `scripts/cleanup-demos.ps1`.
 
 ---
 

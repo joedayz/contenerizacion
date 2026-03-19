@@ -62,19 +62,16 @@ El rol de Kubernetes en Vault se configura para asociar un **service account** +
 
 ## 5. Práctica recomendada (paso a paso con Injector)
 
-1. **Instalar Vault en Kubernetes** (modo laboratorio)  
-   - Sigue la guía `03b-hashicorp-vault-k8s-docker-desktop.md` para desplegar Vault + Vault Agent Injector en el namespace `vault`.
+1. **Preparar Vault con script automático (recomendado)**  
+   - Linux / macOS:
+     - `cd ejemplos/03-vault/scripts`
+     - `./vault-up.sh`
+   - Windows (PowerShell):
+     - `cd ejemplos/03-vault/scripts`
+     - `.\vault-up.ps1`
+   - Estos scripts dejan listo en un solo paso: Vault (dev) + Injector + Kubernetes auth + secretos + policies + roles.
 
-2. **Crear un secreto de ejemplo en Vault**  
-   - Obtener el token raíz (en modo dev):
-     - `kubectl -n vault exec -it vault-0 -- sh -c 'echo $VAULT_DEV_ROOT_TOKEN_ID'`
-   - Exportar variables (ejemplo Bash):
-     - `export VAULT_ADDR=http://127.0.0.1:8200`  
-     - `export VAULT_TOKEN=<root o el valor obtenido>`
-   - Crear el secreto:
-     - `vault kv put secret/mi-app/db username="appuser" password="changeme"`
-
-3. **Aplicar el Deployment con anotaciones del Injector**  
+2. **Aplicar el Deployment con anotaciones del Injector**  
    - Usar el manifiesto `ejemplos/03-vault/deployment-with-vault-annotations.yaml`, que ya trae anotaciones típicas como:
      - `vault.hashicorp.com/agent-inject: "true"`
      - `vault.hashicorp.com/agent-inject-secret-db: "secret/mi-app/db"`
@@ -83,7 +80,7 @@ El rol de Kubernetes en Vault se configura para asociar un **service account** +
      - `kubectl apply -f deployment-with-vault-annotations.yaml`
      - `kubectl get pods -l app=app-con-vault -w`
 
-4. **Verificar el secreto inyectado en el Pod**  
+3. **Verificar el secreto inyectado en el Pod**  
    - Entrar al Pod:
      - `POD_NAME=$(kubectl get pod -l app=app-con-vault -o jsonpath='{.items[0].metadata.name}')`
      - `kubectl exec -it "$POD_NAME" -- sh`
@@ -92,17 +89,22 @@ El rol de Kubernetes en Vault se configura para asociar un **service account** +
      - `cat /vault/secrets/db`  (o el nombre definido en la plantilla)
    - Debes ver el usuario/contraseña que creaste en `secret/mi-app/db` sin que estén en la imagen ni en ConfigMaps.
 
-5. **Demostraciones prácticas**  
+4. **Demostraciones prácticas**  
    - Explora `ejemplos/03-vault/` para demostraciones interactivas con comandos en Bash y PowerShell:
-     - Setup de configuración en Vault
+    - Setup automático con `vault-up`
      - Integración Quarkus + Vault Agent Injector
      - Integración con credenciales de base de datos
    - Cada demo incluye scripts para ambas plataformas (`.sh` para Linux/macOS, `.ps1` para Windows).
 
-6. **Conectar esto con una aplicación real**  
+5. **Conectar esto con una aplicación real**  
    - A partir de este Deployment base, puedes:
      - montar `/vault/secrets/db` en tu app (por ejemplo Quarkus, Spring, Node),
      - o parsear ese archivo para cargar variables de entorno al arrancar.
+
+6. **Cuando termines la práctica, desmontar entorno**
+  - Linux / macOS: `cd ejemplos/03-vault/scripts && ./vault-down.sh`
+  - Windows (PowerShell): `cd ejemplos/03-vault/scripts; .\vault-down.ps1`
+  - Si solo quieres limpiar apps demo y dejar Vault instalado, usa `cleanup-demos.sh` / `cleanup-demos.ps1`.
 
 Los manifiestos en `ejemplos/03-vault/` sirven como plantilla para reutilizar las anotaciones del Injector en otras aplicaciones.
 
