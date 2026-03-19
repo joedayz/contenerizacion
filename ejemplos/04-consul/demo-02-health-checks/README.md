@@ -1,6 +1,5 @@
 # Demo 2: Health Checks Dinámicos con Consul
 
-> **💡 Usuarios de Windows/PowerShell:** Todos los comandos `bash` en este README tienen equivalentes PowerShell. Ver tabla de conversión al final de este documento o consultar [../DOCKER-DESKTOP-WINDOWS.md](../DOCKER-DESKTOP-WINDOWS.md).
 
 ## 🎯 Objetivo
 
@@ -49,6 +48,13 @@ Servicio con health check configurable:
 Cliente que consume backend y muestra qué instancias reciben tráfico.
 
 ## 🚀 Paso a Paso
+
+
+### Paso 0: Construir las imagenes
+
+```bash
+./build-and-load.ps1
+```
 
 ### Paso 1: Desplegar backend-service
 
