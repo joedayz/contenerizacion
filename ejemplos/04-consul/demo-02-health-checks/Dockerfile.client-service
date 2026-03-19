@@ -4,7 +4,7 @@ FROM alpine:3.18
 RUN apk add --no-cache curl bind-tools
 
 # Cliente que consume backend-service vía Consul DNS
-ENV BACKEND_URL=http://backend-service.service.consul:8080
+ENV BACKEND_URL=http://backend-service:8080
 
 CMD ["/bin/sh", "-c", "\
     echo '=== Client Service Starting ===' && \
@@ -12,7 +12,7 @@ CMD ["/bin/sh", "-c", "\
     echo 'Hostname: '$(hostname) && \
     while true; do \
       BACKEND_DATA=$(curl -s -m 2 \"$BACKEND_URL\" 2>/dev/null || echo '{\"error\":\"Backend not reachable\"}'); \
-      RESPONSE_BODY='{\"client\":\"'$(hostname)'\",\"timestamp\":'$(date +%s)',\"backend\":'$BACKEND_DATA',\"discovery\":{\"method\":\"consul-dns\",\"backend_url\":\"'$BACKEND_URL'\"}}'; \
+      RESPONSE_BODY='{\"client\":\"'$(hostname)'\",\"timestamp\":'$(date +%s)',\"backend\":'$BACKEND_DATA',\"discovery\":{\"method\":\"kubernetes-service-dns\",\"backend_url\":\"'$BACKEND_URL'\"}}'; \
       { \
         echo -e 'HTTP/1.1 200 OK\\r'; \
         echo -e 'Content-Type: application/json\\r'; \

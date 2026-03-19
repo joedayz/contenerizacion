@@ -29,7 +29,7 @@ spec:
           protocol: TCP
         env:
         - name: BACKEND_URL
-          value: "http://backend-service.service.consul:8080"
+          value: "http://backend-service:8080"
         livenessProbe:
           httpGet:
             path: /

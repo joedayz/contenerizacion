@@ -104,9 +104,7 @@ kubectl port-forward svc/client-service 8082:8082
 
 ```bash
 # Hacer múltiples requests para ver distribución
-for i in {1..10}; do
-  curl -s http://localhost:8082/api/requests | jq '.backend'
-done
+1..10 | ForEach-Object { curl.exe -s http://localhost:8082/api/requests | jq -r ".backend" }
 ```
 
 **Salida esperada** (distribución entre las 3 instancias):
