@@ -3,7 +3,7 @@ FROM alpine:3.18
 # Instalar curl, bind-tools (para nslookup) y netcat
 RUN apk add --no-cache curl bind-tools netcat-openbsd
 
-ENV USER_SERVICE_URL=http://user-service.service.consul:8080
+ENV USER_SERVICE_URL=http://user-service:8080
 
 COPY <<'EOF' /start.sh
 #!/bin/sh
