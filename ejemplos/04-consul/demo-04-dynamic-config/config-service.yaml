@@ -52,7 +52,7 @@ spec:
       serviceAccountName: config-service
       containers:
       - name: config-service
-        image: localhost/config-service:latest
+        image: config-service:latest
         imagePullPolicy: IfNotPresent
         command:
           - /bin/bash

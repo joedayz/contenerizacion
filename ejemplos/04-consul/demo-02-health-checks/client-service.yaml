@@ -21,7 +21,7 @@ spec:
     spec:
       containers:
       - name: client
-        image: localhost/client-service:latest
+        image: client-service:latest
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 8082

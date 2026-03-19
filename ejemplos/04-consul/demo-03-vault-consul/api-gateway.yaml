@@ -21,7 +21,7 @@ spec:
     spec:
       containers:
       - name: gateway
-        image: localhost/api-gateway:latest
+        image: api-gateway:latest
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 8090

@@ -72,7 +72,7 @@ spec:
       containers:
       - name: user-service
         # Imagen local construida con Dockerfile.user-service
-        image: localhost/user-service:latest
+        image: user-service:latest
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 8080
