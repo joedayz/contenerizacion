@@ -4,9 +4,33 @@ Estos archivos son **referencia** para integrar Vault con Kubernetes. Requieren 
 
 ## Contenido de esta carpeta
 
+- `scripts/vault-up.sh` / `scripts/vault-up.ps1`: **instala Vault vía Helm y lo configura** (k8s auth, secretos, políticas, roles) en un solo paso.
+- `scripts/vault-down.sh` / `scripts/vault-down.ps1`: **elimina demos y desinstala Vault** del clúster.
+- `scripts/cleanup-demos.sh` / `scripts/cleanup-demos.ps1`: elimina solo los deployments de demo sin tocar Vault.
 - `deployment-with-vault-annotations.yaml`: ejemplo base con BusyBox para entender el injector.
 - `quarkus-vault-demo/`: demo runnable de Quarkus que consume secretos inyectados por Vault.
 - `expense-service/`: API REST CRUD (Quarkus + Panache + PostgreSQL) con credenciales inyectadas desde Vault.
+
+## Inicio rápido (Docker Desktop)
+
+```bash
+# Linux / macOS
+cd ejemplos/03-vault/scripts
+./vault-up.sh        # instala + configura todo
+# ... trabajar con las demos ...
+./vault-down.sh      # elimina todo cuando termines
+```
+
+```powershell
+# Windows
+cd ejemplos/03-vault/scripts
+.\vault-up.ps1       # instala + configura todo
+# ... trabajar con las demos ...
+.\vault-down.ps1     # elimina todo cuando termines
+```
+
+> `vault-up` hace automáticamente: Helm install (dev mode) → kubernetes auth → secretos de ejemplo → políticas → roles.
+> No necesitas vault CLI instalado localmente; todo se ejecuta dentro del pod via `kubectl exec`.
 
 ## 1. Configuración en Vault (resumen)
 
