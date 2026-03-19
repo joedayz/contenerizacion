@@ -29,11 +29,18 @@ spec:
           protocol: TCP
         env:
         - name: USER_SERVICE_URL
-          value: "http://user-service:8080"
+          value: "http://user-service.service.consul:8080"
+        startupProbe:
+          tcpSocket:
+            port: 8090
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 2
+          failureThreshold: 24
         livenessProbe:
           tcpSocket:
             port: 8090
-          initialDelaySeconds: 10
+          initialDelaySeconds: 15
           periodSeconds: 10
           timeoutSeconds: 5
           failureThreshold: 6
@@ -42,7 +49,7 @@ spec:
             port: 8090
           initialDelaySeconds: 5
           periodSeconds: 5
-          timeoutSeconds: 5
+          timeoutSeconds: 3
           failureThreshold: 6
         resources:
           requests:
