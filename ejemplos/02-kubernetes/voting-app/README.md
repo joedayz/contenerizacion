@@ -77,10 +77,10 @@ kubectl logs -l app=result -n voting-app --tail=20
 #### Opción A: Port Forward (múltiples terminales)
 ```bash
 # Terminal 1: Votación
-kubectl port-forward svc/vote 5000:80 -n voting-app
+kubectl port-forward svc/vote 5000:8080 -n voting-app
 
 # Terminal 2: Resultados
-kubectl port-forward svc/result 5001:80 -n voting-app
+kubectl port-forward svc/result 5001:8081 -n voting-app
 ```
 
 - **Votación**: `http://localhost:5000`
