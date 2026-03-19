@@ -41,7 +41,7 @@ Luego abre `http://localhost:3000` en tu navegador.
 ```bash
 kubectl exec -it <pod-frontend> -n curso-local -- sh
 # Dentro del pod:
-curl http://backend:8080/api/health
+curl http://backend-service:80
 ```
 
 ## Conceptos clave
