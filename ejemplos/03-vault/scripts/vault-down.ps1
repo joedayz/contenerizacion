@@ -1,18 +1,18 @@
-# Elimina los recursos de las demos de Vault y desinstala Vault del clúster.
+# Elimina los recursos de las demos de Vault y desinstala Vault del cluster.
 # Para limpiar solo los deployments de demo sin tocar Vault, usa cleanup-demos.ps1
 #
 # Uso: .\vault-down.ps1
 
 $ErrorActionPreference = "Continue"
 
-Write-Host "=== Vault Teardown — Docker Desktop ===" -ForegroundColor Cyan
+Write-Host "=== Vault Teardown - Docker Desktop ===" -ForegroundColor Cyan
 Write-Host ""
-Write-Host "Esto eliminará:" -ForegroundColor Yellow
-Write-Host "  • Deployments, Services, PVCs de las demos"
-Write-Host "  • Helm release 'vault' y namespace 'vault'"
+Write-Host "Esto eliminara:" -ForegroundColor Yellow
+Write-Host "  - Deployments, Services, PVCs de las demos"
+Write-Host "  - Helm release 'vault' y namespace 'vault'"
 Write-Host ""
 
-$response = Read-Host "¿Continuar? (y/N)"
+$response = Read-Host "Continuar? (y/N)"
 if ($response -ne "y" -and $response -ne "Y") {
     Write-Host "Cancelado." -ForegroundColor Yellow
     exit 0
@@ -36,9 +36,9 @@ Write-Host "3. Eliminando namespace vault..." -ForegroundColor Yellow
 & kubectl delete namespace vault --ignore-not-found 2>$null | Out-Null
 
 Write-Host ""
-Write-Host "═══════════════════════════════════════════════════" -ForegroundColor Green
-Write-Host "✅ Vault eliminado del clúster" -ForegroundColor Green
-Write-Host "═══════════════════════════════════════════════════" -ForegroundColor Green
+Write-Host "===================================================" -ForegroundColor Green
+Write-Host "Vault eliminado del cluster" -ForegroundColor Green
+Write-Host "===================================================" -ForegroundColor Green
 Write-Host ""
 Write-Host "Para reinstalar y configurar:" -ForegroundColor Yellow
 Write-Host "  .\vault-up.ps1" -ForegroundColor Cyan
