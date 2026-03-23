@@ -91,15 +91,24 @@ spec:
         - containerPort: 8085
           name: http
           protocol: TCP
+        startupProbe:
+          tcpSocket:
+            port: 8085
+          timeoutSeconds: 10
+          periodSeconds: 5
+          initialDelaySeconds: 10
+          failureThreshold: 30
         livenessProbe:
           tcpSocket:
             port: 8085
-          initialDelaySeconds: 15
+          timeoutSeconds: 5
+          initialDelaySeconds: 0
           periodSeconds: 10
         readinessProbe:
           tcpSocket:
             port: 8085
-          initialDelaySeconds: 10
+          timeoutSeconds: 5
+          initialDelaySeconds: 0
           periodSeconds: 5
         resources:
           requests:
