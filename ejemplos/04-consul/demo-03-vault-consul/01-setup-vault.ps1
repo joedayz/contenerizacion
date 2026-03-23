@@ -44,7 +44,7 @@ Write-Host "3. Creando secretos de PostgreSQL..." -ForegroundColor Blue
 & kubectl exec -n vault $vaultPod -- vault kv put secret/demo03/database `
     username="userdb" `
     password="SecureP@ssw0rd2024" `
-    host="postgres-db.service.consul" `
+    host="postgres-db" `
     port="5432" `
     database="userdb"
 

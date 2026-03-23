@@ -51,7 +51,7 @@ class UserServiceHandler(http.server.BaseHTTPRequestHandler):
             'users': users,
             'source': socket.gethostname(),
             'discovery': {
-                'database': f"{DB.get('DB_HOST')} (via Consul DNS)",
+                'database': f"{DB.get('DB_HOST')} (via Kubernetes DNS)",
                 'credentialsFrom': 'Vault Agent Injector'
             }
         }, indent=2).encode()

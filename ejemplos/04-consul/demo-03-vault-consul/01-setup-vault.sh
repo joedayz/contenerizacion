@@ -82,7 +82,7 @@ echo -e "${YELLOW}6. Creando secretos para PostgreSQL...${NC}"
 vault kv put demo03/database \
   username="userdb" \
   password="SecureP@ssw0rd2024" \
-  host="postgres-db.service.consul" \
+  host="postgres-db" \
   port="5432" \
   database="userdb"
 echo -e "${GREEN}✅ Secretos de BD creados${NC}"
