@@ -6,11 +6,8 @@ metadata:
   namespace: default
 data:
   init.sql: |
-    -- Crear base de datos si no existe
-    CREATE DATABASE IF NOT EXISTS userdb;
-    
-    -- Conectar a userdb
-    \c userdb;
+    -- Este script se ejecuta automáticamente al crear la base de datos
+    -- PostgreSQL crea la base de datos especificada en POSTGRES_DB
     
     -- Crear tabla de usuarios
     CREATE TABLE IF NOT EXISTS users (
@@ -27,7 +24,8 @@ data:
     ON CONFLICT (email) DO NOTHING;
     
     -- Verificar
-    SELECT * FROM users;
+    SELECT 'Users table created successfully' as status;
+    SELECT COUNT(*) as user_count FROM users;
 ---
 apiVersion: v1
 kind: Service
