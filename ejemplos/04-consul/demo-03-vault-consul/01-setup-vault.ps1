@@ -28,8 +28,9 @@ if ($LASTEXITCODE -ne 0) {
 
 Write-Host "2. Configurando Kubernetes auth..." -ForegroundColor Blue
 
-# Comando en una sola línea para evitar problemas con CRLF de Windows
-$bashCmd = 'TOKEN=$(cat /var/run/secrets/kubernetes.io/serviceaccount/token); CA_CERT=$(cat /var/run/secrets/kubernetes.io/serviceaccount/ca.crt); vault write auth/kubernetes/config token_reviewer_jwt="$TOKEN" kubernetes_host="https://kubernetes.default.svc:443" kubernetes_ca_cert="$CA_CERT"'
+# Usar el prefijo @ de Vault para leer directamente desde archivos
+# Esto evita problemas con saltos de línea en certificados
+$bashCmd = 'vault write auth/kubernetes/config token_reviewer_jwt=@/var/run/secrets/kubernetes.io/serviceaccount/token kubernetes_host=https://kubernetes.default.svc:443 kubernetes_ca_cert=@/var/run/secrets/kubernetes.io/serviceaccount/ca.crt'
 
 & kubectl exec -n vault $vaultPod -- sh -c $bashCmd
 
