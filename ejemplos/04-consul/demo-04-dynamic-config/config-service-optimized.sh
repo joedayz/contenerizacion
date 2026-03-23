@@ -28,57 +28,73 @@ touch "$CACHE_FILE"
 # Función para refrescar caché desde Consul (1 sola llamada HTTP)
 refresh_cache() {
   while true; do
-    # Obtener TODAS las keys del prefix en 1 sola llamada
-    CONSUL_DATA=$(curl -s "$CONSUL_URL/v1/kv/demo04/config/?recurse" 2>/dev/null || echo "[]")
+    # Timestamp y hostname (obtener fuera del loop)
+    TIMESTAMP=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+    HOSTNAME=$(hostname)
     
-    # Construir JSON desde las keys de Consul
-    cat > "$CACHE_FILE" <<EOF
-{
-  "config": {
-    "features": {
-      "new-ui": "$(echo "$CONSUL_DATA" | jq -r '.[] | select(.Key=="demo04/config/features/new-ui") | .Value' | base64 -d 2>/dev/null || echo "not-set")",
-      "analytics": "$(echo "$CONSUL_DATA" | jq -r '.[] | select(.Key=="demo04/config/features/analytics") | .Value' | base64 -d 2>/dev/null || echo "not-set")",
-      "dark-mode": "$(echo "$CONSUL_DATA" | jq -r '.[] | select(.Key=="demo04/config/features/dark-mode") | .Value' | base64 -d 2>/dev/null || echo "not-set")",
-      "beta-features": "$(echo "$CONSUL_DATA" | jq -r '.[] | select(.Key=="demo04/config/features/beta-features") | .Value' | base64 -d 2>/dev/null || echo "not-set")"
-    },
-    "ratelimit": {
-      "requests-per-second": "$(echo "$CONSUL_DATA" | jq -r '.[] | select(.Key=="demo04/config/ratelimit/requests-per-second") | .Value' | base64 -d 2>/dev/null || echo "not-set")",
-      "burst": "$(echo "$CONSUL_DATA" | jq -r '.[] | select(.Key=="demo04/config/ratelimit/burst") | .Value' | base64 -d 2>/dev/null || echo "not-set")",
-      "enabled": "$(echo "$CONSUL_DATA" | jq -r '.[] | select(.Key=="demo04/config/ratelimit/enabled") | .Value' | base64 -d 2>/dev/null || echo "not-set")"
-    },
-    "cache": {
-      "ttl": "$(echo "$CONSUL_DATA" | jq -r '.[] | select(.Key=="demo04/config/cache/ttl") | .Value' | base64 -d 2>/dev/null || echo "not-set")",
-      "max-size": "$(echo "$CONSUL_DATA" | jq -r '.[] | select(.Key=="demo04/config/cache/max-size") | .Value' | base64 -d 2>/dev/null || echo "not-set")",
-      "enabled": "$(echo "$CONSUL_DATA" | jq -r '.[] | select(.Key=="demo04/config/cache/enabled") | .Value' | base64 -d 2>/dev/null || echo "not-set")"
+    # Obtener TODAS las keys del prefix en 1 sola llamada y construir JSON completo en UNA pasada de jq
+    curl -s "$CONSUL_URL/v1/kv/demo04/config/?recurse" 2>/dev/null | \
+    jq -r --arg timestamp "$TIMESTAMP" \
+          --arg hostname "$HOSTNAME" \
+          --arg weather "${WEATHER_API_KEY:0:10}***" \
+          --arg payment "${PAYMENT_GATEWAY_KEY:0:10}***" \
+          --arg maps "${MAPS_API_KEY:0:10}***" \
+          --arg analytics "$ANALYTICS_ID" \
+          --arg jwt_algo "$JWT_ALGORITHM" \
+          --arg jwt_exp "$JWT_EXPIRATION" \
+          --arg jwt_iss "$JWT_ISSUER" \
+    '
+    # Función helper para obtener valor decodificado por key
+    def get_value($key): 
+      (.[] | select(.Key == $key) | .Value | @base64d) // "not-set";
+    
+    # Construir objeto completo
+    {
+      "config": {
+        "features": {
+          "new-ui": get_value("demo04/config/features/new-ui"),
+          "analytics": get_value("demo04/config/features/analytics"),
+          "dark-mode": get_value("demo04/config/features/dark-mode"),
+          "beta-features": get_value("demo04/config/features/beta-features")
+        },
+        "ratelimit": {
+          "requests-per-second": get_value("demo04/config/ratelimit/requests-per-second"),
+          "burst": get_value("demo04/config/ratelimit/burst"),
+          "enabled": get_value("demo04/config/ratelimit/enabled")
+        },
+        "cache": {
+          "ttl": get_value("demo04/config/cache/ttl"),
+          "max-size": get_value("demo04/config/cache/max-size"),
+          "enabled": get_value("demo04/config/cache/enabled")
+        }
+      },
+      "secrets": {
+        "apiKeys": {
+          "weatherApi": $weather,
+          "paymentGateway": $payment,
+          "mapsApi": $maps,
+          "analytics": $analytics
+        },
+        "jwt": {
+          "algorithm": $jwt_algo,
+          "expiration": $jwt_exp,
+          "issuer": $jwt_iss
+        }
+      },
+      "metadata": {
+        "lastUpdate": $timestamp,
+        "instance": $hostname,
+        "sources": {
+          "config": "consul-kv",
+          "secrets": "vault-agent-injector"
+        },
+        "cache": {
+          "enabled": true,
+          "refreshInterval": "2s"
+        }
+      }
     }
-  },
-  "secrets": {
-    "apiKeys": {
-      "weatherApi": "${WEATHER_API_KEY:0:10}***",
-      "paymentGateway": "${PAYMENT_GATEWAY_KEY:0:10}***",
-      "mapsApi": "${MAPS_API_KEY:0:10}***",
-      "analytics": "$ANALYTICS_ID"
-    },
-    "jwt": {
-      "algorithm": "$JWT_ALGORITHM",
-      "expiration": "$JWT_EXPIRATION",
-      "issuer": "$JWT_ISSUER"
-    }
-  },
-  "metadata": {
-    "lastUpdate": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
-    "instance": "$(hostname)",
-    "sources": {
-      "config": "consul-kv",
-      "secrets": "vault-agent-injector"
-    },
-    "cache": {
-      "enabled": true,
-      "refreshInterval": "2s"
-    }
-  }
-}
-EOF
+    ' > "$CACHE_FILE" 2>/dev/null || echo '{"error":"cache refresh failed"}' > "$CACHE_FILE"
     
     echo "[$(date)] Cache refreshed from Consul"
     sleep 2
