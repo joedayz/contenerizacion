@@ -86,6 +86,8 @@ Este script:
 
 ### Paso 2: Desplegar PostgreSQL
 
+**Bash**
+
 ```bash
 # Desplegar base de datos
 kubectl apply -f postgres.yaml
@@ -93,6 +95,16 @@ kubectl apply -f postgres.yaml
 # Verificar que está registrado en Consul
 kubectl exec -n consul consul-server-0 -- \
   consul catalog services | grep postgres
+```
+
+**PowerShell**
+
+```powershell
+# Desplegar base de datos
+kubectl apply -f postgres.yaml
+
+# Verificar que está registrado en Consul
+kubectl exec -n consul consul-server-0 -- consul catalog services | Select-String postgres
 ```
 
 ### Paso 3: Desplegar User Service
