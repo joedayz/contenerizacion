@@ -28,13 +28,20 @@ if ($LASTEXITCODE -ne 0) {
 
 Write-Host "2. Configurando Kubernetes auth..." -ForegroundColor Blue
 $K8S_HOST = "https://kubernetes.default.svc:443"
-$SA_TOKEN = & kubectl exec -n vault $vaultPod -- cat /var/run/secrets/kubernetes.io/serviceaccount/token
-$SA_CA_CRT = & kubectl exec -n vault $vaultPod -- cat /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
 
-& kubectl exec -n vault $vaultPod -- vault write auth/kubernetes/config `
-    token_reviewer_jwt="$SA_TOKEN" `
-    kubernetes_host="$K8S_HOST" `
-    kubernetes_ca_cert="$SA_CA_CRT"
+# Usar los archivos del service account directamente dentro del pod
+& kubectl exec -n vault $vaultPod -- sh -c @"
+vault write auth/kubernetes/config \
+    token_reviewer_jwt=`"`$(cat /var/run/secrets/kubernetes.io/serviceaccount/token)`" \
+    kubernetes_host='$K8S_HOST' \
+    kubernetes_ca_cert=`"`$(cat /var/run/secrets/kubernetes.io/serviceaccount/ca.crt)`"
+"@
+
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "❌ Error configurando Kubernetes auth" -ForegroundColor Red
+    exit 1
+}
+Write-Host "✅ Kubernetes auth configurado" -ForegroundColor Green
 
 Write-Host "3. Creando secretos de PostgreSQL..." -ForegroundColor Blue
 & kubectl exec -n vault $vaultPod -- vault kv put secret/demo03/database `
@@ -43,6 +50,12 @@ Write-Host "3. Creando secretos de PostgreSQL..." -ForegroundColor Blue
     host="postgres-db.service.consul" `
     port="5432" `
     database="userdb"
+
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "❌ Error creando secretos" -ForegroundColor Red
+    exit 1
+}
+Write-Host "✅ Secretos creados" -ForegroundColor Green
 
 Write-Host "4. Creando policy para user-service..." -ForegroundColor Blue
 # Crear policy usando stdin
@@ -57,6 +70,18 @@ path "secret/metadata/demo03/*" {
 
 $policyContent | & kubectl exec -i -n vault $vaultPod -- vault policy write user-service-policy -
 
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "❌ Error creando policy" -ForegroundColor Red
+    exit 1
+}
+Write-Host "✅ Policy creada" -ForegroundColor Green
+
+
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "❌ Error creando role" -ForegroundColor Red
+    exit 1
+}
+Write-Host "✅ Role creado" -ForegroundColor Green
 Write-Host "5. Vinculando Vault role con service account..." -ForegroundColor Blue
 & kubectl exec -n vault $vaultPod -- vault write auth/kubernetes/role/user-service-role `
     bound_service_account_names=user-service `
