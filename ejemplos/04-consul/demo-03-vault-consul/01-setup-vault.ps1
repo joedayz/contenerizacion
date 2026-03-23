@@ -21,38 +21,36 @@ if ($LASTEXITCODE -ne 0) {
 
 Write-Host "2. Configurando Kubernetes auth..." -ForegroundColor Blue
 $K8S_HOST = "https://kubernetes.default.svc:443"
+$SA_TOKEN = & kubectl exec -n vault $vaultPod -- cat /var/run/secrets/kubernetes.io/serviceaccount/token
+$SA_CA_CRT = & kubectl exec -n vault $vaultPod -- cat /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+
 & kubectl exec -n vault $vaultPod -- vault write auth/kubernetes/config `
-    token_reviewer_jwt=@/var/run/secrets/kubernetes.io/serviceaccount/token `
+    token_reviewer_jwt="$SA_TOKEN" `
     kubernetes_host="$K8S_HOST" `
-    kubernetes_ca_cert=@/var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+    kubernetes_ca_cert="$SA_CA_CRT"
 
-Write-Host "3. Habilitando KV secrets engine..." -ForegroundColor Blue
-& kubectl exec -n vault $vaultPod -- vault secrets enable -path=demo03 kv-v2 2>&1 | Out-Null
-if ($LASTEXITCODE -ne 0) {
-    Write-Host "⚠️  KV secrets engine ya estaba habilitado" -ForegroundColor Yellow
-}
+Write-Host "3. Creando secretos de PostgreSQL..." -ForegroundColor Blue
+& kubectl exec -n vault $vaultPod -- vault kv put secret/demo03/database `
+    username="userdb" `
+    password="SecureP@ssw0rd2024" `
+    host="postgres-db.service.consul" `
+    port="5432" `
+    database="userdb"
 
-Write-Host "4. Creando secretos de PostgreSQL..." -ForegroundColor Blue
-& kubectl exec -n vault $vaultPod -- vault kv put demo03/database `
-    username=myuser `
-    password=mypassword123 `
-    host=postgres-db `
-    port=5432 `
-    database=userdb
-
-Write-Host "5. Creando policy para user-service..." -ForegroundColor Blue
-$POLICY = @'
-path "demo03/data/database" {
+Write-Host "4. Creando policy para user-service..." -ForegroundColor Blue
+# Crear policy usando stdin
+$policyContent = @'
+path "secret/data/demo03/database" {
   capabilities = ["read"]
+}
+path "secret/metadata/demo03/*" {
+  capabilities = ["list"]
 }
 '@
 
-& kubectl exec -n vault $vaultPod -- sh -c "echo '$POLICY' | vault policy write user-service-policy -"
+$policyContent | & kubectl exec -i -n vault $vaultPod -- vault policy write user-service-policy -
 
-Write-Host "6. Creando Kubernetes service account..." -ForegroundColor Blue
-& kubectl create serviceaccount user-service --dry-run=client -o yaml | & kubectl apply -f -
-
-Write-Host "7. Vinculando Vault role con service account..." -ForegroundColor Blue
+Write-Host "5. Vinculando Vault role con service account..." -ForegroundColor Blue
 & kubectl exec -n vault $vaultPod -- vault write auth/kubernetes/role/user-service-role `
     bound_service_account_names=user-service `
     bound_service_account_namespaces=default `
@@ -66,16 +64,15 @@ Write-Host "══════════════════════�
 Write-Host ""
 Write-Host "Configuración creada:" -ForegroundColor Yellow
 Write-Host "  • Kubernetes auth habilitado" -ForegroundColor White
-Write-Host "  • Secretos en: demo03/database" -ForegroundColor White
+Write-Host "  • Secretos en: secret/demo03/database" -ForegroundColor White
 Write-Host "  • Policy: user-service-policy" -ForegroundColor White
 Write-Host "  • Role: user-service-role" -ForegroundColor White
-Write-Host "  • ServiceAccount: user-service" -ForegroundColor White
+Write-Host "  • ServiceAccount: user-service (en user-service.yaml)" -ForegroundColor White
 Write-Host ""
 Write-Host "Para verificar:" -ForegroundColor Cyan
-Write-Host "  kubectl port-forward -n vault svc/vault 8200:8200" -ForegroundColor White
-Write-Host "  `$env:VAULT_ADDR='http://localhost:8200'" -ForegroundColor White
-Write-Host "  `$env:VAULT_TOKEN='root'" -ForegroundColor White
-Write-Host "  vault kv get demo03/database" -ForegroundColor White
+Write-Host "  kubectl exec -n vault $vaultPod -- vault kv get secret/demo03/database" -ForegroundColor White
+Write-Host "  kubectl exec -n vault $vaultPod -- vault policy read user-service-policy" -ForegroundColor White
+Write-Host "  kubectl exec -n vault $vaultPod -- vault read auth/kubernetes/role/user-service-role" -ForegroundColor White
 Write-Host ""
 Write-Host "Próximos pasos:" -ForegroundColor Cyan
 Write-Host "  kubectl apply -f postgres.yaml" -ForegroundColor White
