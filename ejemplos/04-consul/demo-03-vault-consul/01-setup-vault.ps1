@@ -20,14 +20,11 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 Write-Host "2. Configurando Kubernetes auth..." -ForegroundColor Blue
-$K8S_HOST = "https://10.96.0.1:443"  # Default Kubernetes API server
-$SA_TOKEN = & kubectl exec -n vault $vaultPod -- cat /var/run/secrets/kubernetes.io/serviceaccount/token
-$SA_CA_CRT = & kubectl exec -n vault $vaultPod -- cat /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
-
+$K8S_HOST = "https://kubernetes.default.svc:443"
 & kubectl exec -n vault $vaultPod -- vault write auth/kubernetes/config `
-    token_reviewer_jwt="$SA_TOKEN" `
+    token_reviewer_jwt=@/var/run/secrets/kubernetes.io/serviceaccount/token `
     kubernetes_host="$K8S_HOST" `
-    kubernetes_ca_cert="$SA_CA_CRT"
+    kubernetes_ca_cert=@/var/run/secrets/kubernetes.io/serviceaccount/ca.crt
 
 Write-Host "3. Habilitando KV secrets engine..." -ForegroundColor Blue
 & kubectl exec -n vault $vaultPod -- vault secrets enable -path=demo03 kv-v2 2>&1 | Out-Null
@@ -69,16 +66,16 @@ Write-Host "══════════════════════�
 Write-Host ""
 Write-Host "Configuración creada:" -ForegroundColor Yellow
 Write-Host "  • Kubernetes auth habilitado" -ForegroundColor White
-Write-Host "  • Secretos en: demo03/postgres" -ForegroundColor White
+Write-Host "  • Secretos en: demo03/database" -ForegroundColor White
 Write-Host "  • Policy: user-service-policy" -ForegroundColor White
-Write-Host "  • Role: user-service" -ForegroundColor White
+Write-Host "  • Role: user-service-role" -ForegroundColor White
 Write-Host "  • ServiceAccount: user-service" -ForegroundColor White
 Write-Host ""
 Write-Host "Para verificar:" -ForegroundColor Cyan
 Write-Host "  kubectl port-forward -n vault svc/vault 8200:8200" -ForegroundColor White
 Write-Host "  `$env:VAULT_ADDR='http://localhost:8200'" -ForegroundColor White
 Write-Host "  `$env:VAULT_TOKEN='root'" -ForegroundColor White
-Write-Host "  vault kv get demo03/postgres" -ForegroundColor White
+Write-Host "  vault kv get demo03/database" -ForegroundColor White
 Write-Host ""
 Write-Host "Próximos pasos:" -ForegroundColor Cyan
 Write-Host "  kubectl apply -f postgres.yaml" -ForegroundColor White

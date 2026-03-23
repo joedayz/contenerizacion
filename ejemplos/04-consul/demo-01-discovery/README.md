@@ -50,48 +50,48 @@ Microservicio que consume product-service:
 
 <table>
 <tr>
-<th>Linux/macOS (Podman + Kind)</th>
-<th>Windows (Docker Desktop + Kind)</th>
+<th>Linux/macOS</th>
+<th>Windows (Docker Desktop)</th>
 </tr>
 <tr>
 <td>
 
 ```bash
-# Construir y cargar imágenes en Kind
+# Construir imágenes con Docker
 ./build-and-load.sh
 ```
 
 **Output esperado:**
 ```
-🔨 Construyendo imágenes con Podman...
-📦 Construyendo localhost/product-service:latest...
-📦 Construyendo localhost/order-service:latest...
-📥 Cargando imágenes en Kind...
-✅ Imágenes construidas y cargadas
+Construyendo imagenes con Docker...
+Construyendo product-service:latest...
+Construyendo order-service:latest...
+Imagenes construidas para Docker Desktop:
+   - product-service:latest
+   - order-service:latest
 ```
 
 </td>
 <td>
 
 ```powershell
-# Construir y cargar imágenes en Kind
+# Construir imágenes con Docker
 .\build-and-load.ps1
 ```
 
 **Output esperado:**
 ```
-🔨 Construyendo imágenes con Docker...
-📦 Construyendo localhost/product-service:latest...
-📦 Construyendo localhost/order-service:latest...
-📥 Cargando imágenes en Kind...
-✅ Imágenes construidas y cargadas
+Construyendo imagenes con Docker...
+Construyendo product-service:latest...
+Construyendo order-service:latest...
+Imagenes construidas para Docker Desktop:
+   - product-service:latest
+   - order-service:latest
 ```
 
 </td>
 </tr>
 </table>
-
-> **Nota para Docker Desktop (sin Kind)**: Si usas Docker Desktop nativamente (no Kind), las imágenes se cargan automáticamente y no necesitas el paso de `kind load`.
 
 ### Paso 1: Desplegar product-service
 

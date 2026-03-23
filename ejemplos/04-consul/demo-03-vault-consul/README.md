@@ -61,6 +61,7 @@ Demostrar una arquitectura completa donde:
 
 ```bash
 # Verificar que Vault y Consul están instalados
+.\build-and-load.ps1
 kubectl get pods -n vault
 kubectl get pods -n consul
 
@@ -74,7 +75,7 @@ cd ../scripts/
 
 ```bash
 # Configurar Vault para la demo
-./01-setup-vault.sh
+./01-setup-vault.ps1
 ```
 
 Este script:
@@ -108,13 +109,15 @@ kubectl get pods -l app=user-service
 
 ### Paso 4: Verificar inyección de secretos
 
-```bash
-# Ver logs del vault-agent
-POD=$(kubectl get pods -l app=user-service -o jsonpath='{.items[0].metadata.name}')
+```powershell
+# 1. Ver logs del vault-agent-init
+$POD = kubectl get pods -l app=user-service -o jsonpath='{.items[0].metadata.name}'
 kubectl logs $POD -c vault-agent-init
 
-# Ver secretos inyectados (deben estar en /vault/secrets/)
+# 2. Ver secretos inyectados
 kubectl exec $POD -c user-service -- ls -la /vault/secrets/
+
+# 3. Ver contenido del archivo de configuración
 kubectl exec $POD -c user-service -- cat /vault/secrets/database-config.txt
 ```
 
@@ -135,20 +138,18 @@ kubectl port-forward svc/api-gateway 8090:8090
 
 ### Paso 6: Probar la integración completa
 
-```bash
-# 1. Crear un usuario
-curl -X POST http://localhost:8090/api/users \
-  -H "Content-Type: application/json" \
-  -d '{"name":"Alice","email":"alice@example.com"}'
+```powershell
+# 1. Crear usuario
+irm http://localhost:8090/api/users -Method POST -ContentType "application/json" -Body '{"name":"Alice","email":"alice@example.com"}'
 
 # 2. Listar usuarios
-curl http://localhost:8090/api/users
+irm http://localhost:8090/api/users
 
-# 3. Obtener un usuario específico
-curl http://localhost:8090/api/users/1
+# 3. Obtener usuario específico
+irm http://localhost:8090/api/users/1
 
-# 4. Verificar que usa Consul para discovery
-curl http://localhost:8090/api/discovery/info
+# 4. Info de Consul discovery
+irm http://localhost:8090/api/discovery/info
 ```
 
 **Salida esperada de /api/discovery/info**:
@@ -181,9 +182,9 @@ En `user-service.yaml`:
 annotations:
   vault.hashicorp.com/agent-inject: "true"
   vault.hashicorp.com/role: "user-service-role"
-  vault.hashicorp.com/agent-inject-secret-database-config.txt: "secret/data/demo03/database"
+  vault.hashicorp.com/agent-inject-secret-database-config.txt: "demo03/data/database"
   vault.hashicorp.com/agent-inject-template-database-config.txt: |
-    {{- with secret "secret/data/demo03/database" -}}
+    {{- with secret "demo03/data/database" -}}
     postgresql://{{ .Data.data.username }}:{{ .Data.data.password }}@{{ .Data.data.host }}:{{ .Data.data.port }}/{{ .Data.data.database }}
     {{- end -}}
 ```

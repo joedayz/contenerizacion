@@ -2,7 +2,6 @@
 
 Este directorio contiene **demos prácticas completas** que muestran cómo **Consul** y **Vault** trabajan juntos en un entorno de microservicios en Kubernetes.
 
-> **💡 Para usuarios de Windows:** Todas las demos incluyen **scripts PowerShell** (`.ps1`) además de bash. Lee [DOCKER-DESKTOP-WINDOWS.md](DOCKER-DESKTOP-WINDOWS.md) para configuración inicial de Docker Desktop.
 
 ---
 
@@ -69,7 +68,6 @@ Cualquiera de estos:
 - Minikube
 - AKS/EKS (para ambiente cloud)
 
-> **⚠️ Para Windows:** Lee [DOCKER-DESKTOP-WINDOWS.md](DOCKER-DESKTOP-WINDOWS.md) para instrucciones completas de instalación de Docker Desktop, Chocolatey, kubectl, helm, consul y vault CLI.
 
 ---
 

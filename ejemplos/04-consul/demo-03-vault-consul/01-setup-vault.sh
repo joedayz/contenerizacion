@@ -79,7 +79,7 @@ fi
 
 # Crear secretos de base de datos
 echo -e "${YELLOW}6. Creando secretos para PostgreSQL...${NC}"
-vault kv put secret/demo03/database \
+vault kv put demo03/database \
   username="userdb" \
   password="SecureP@ssw0rd2024" \
   host="postgres-db.service.consul" \
@@ -91,12 +91,12 @@ echo -e "${GREEN}✅ Secretos de BD creados${NC}"
 echo -e "${YELLOW}7. Creando policy para user-service...${NC}"
 vault policy write user-service-policy - <<EOF
 # Permiso para leer secretos de base de datos
-path "secret/data/demo03/database" {
+path "demo03/data/database" {
   capabilities = ["read"]
 }
 
 # Permiso para listar secretos (útil para debugging)
-path "secret/metadata/demo03/*" {
+path "demo03/metadata/*" {
   capabilities = ["list"]
 }
 EOF
@@ -114,7 +114,7 @@ echo -e "${GREEN}✅ Role creado${NC}"
 # Verificar configuración
 echo -e "${YELLOW}9. Verificando configuración...${NC}"
 echo "   - Secretos:"
-vault kv get secret/demo03/database
+vault kv get demo03/database
 echo ""
 echo "   - Policy:"
 vault policy read user-service-policy

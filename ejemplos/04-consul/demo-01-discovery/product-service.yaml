@@ -32,7 +32,7 @@ spec:
     spec:
       containers:
       - name: product-service
-        image: localhost/product-service:latest
+        image: product-service:latest
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 8080

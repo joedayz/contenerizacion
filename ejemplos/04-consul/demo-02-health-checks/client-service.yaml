@@ -21,7 +21,7 @@ spec:
     spec:
       containers:
       - name: client
-        image: localhost/client-service:latest
+        image: client-service:latest
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 8082
@@ -29,7 +29,7 @@ spec:
           protocol: TCP
         env:
         - name: BACKEND_URL
-          value: "http://backend-service.service.consul:8080"
+          value: "http://backend-service:8080"
         livenessProbe:
           httpGet:
             path: /

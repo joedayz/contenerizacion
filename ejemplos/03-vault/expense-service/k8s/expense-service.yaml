@@ -38,7 +38,7 @@ spec:
         runAsNonRoot: true
       containers:
       - name: app
-        image: localhost/expense-service:latest
+        image: expense-service:latest
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 8080

@@ -56,11 +56,11 @@ spec:
         # Vault Agent Injector annotations
         "vault.hashicorp.com/agent-inject": "true"
         "vault.hashicorp.com/role": "user-service-role"
-        "vault.hashicorp.com/agent-inject-secret-database-config.txt": "secret/data/demo03/database"
+        "vault.hashicorp.com/agent-inject-secret-database-config.txt": "demo03/data/database"
         
         # Template para formatear el secreto
         "vault.hashicorp.com/agent-inject-template-database-config.txt": |
-          {{- with secret "secret/data/demo03/database" -}}
+          {{- with secret "demo03/data/database" -}}
           export DB_USERNAME="{{ .Data.data.username }}"
           export DB_PASSWORD="{{ .Data.data.password }}"
           export DB_HOST="{{ .Data.data.host }}"
@@ -72,17 +72,25 @@ spec:
       containers:
       - name: user-service
         # Imagen local construida con Dockerfile.user-service
-        image: localhost/user-service:latest
+        image: user-service:latest
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 8080
           name: http
           protocol: TCP
+        startupProbe:
+          httpGet:
+            path: /
+            port: 8080
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 2
+          failureThreshold: 30
         # Health checks que Consul heredará
         livenessProbe:
           tcpSocket:
             port: 8080
-          initialDelaySeconds: 15
+          initialDelaySeconds: 20
           periodSeconds: 10
           timeoutSeconds: 3
           failureThreshold: 3
@@ -92,14 +100,14 @@ spec:
           initialDelaySeconds: 10
           periodSeconds: 5
           timeoutSeconds: 2
-          failureThreshold: 2
+          failureThreshold: 3
         resources:
           requests:
             cpu: "100m"
-            memory: "128Mi"
+            memory: "192Mi"
           limits:
             cpu: "500m"
-            memory: "256Mi"
+            memory: "384Mi"
         securityContext:
           runAsNonRoot: true
           runAsUser: 999

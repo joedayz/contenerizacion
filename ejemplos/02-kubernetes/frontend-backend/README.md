@@ -33,7 +33,7 @@ kubectl get svc -n curso-local
 
 #### Opción A: Port Forward
 ```bash
-kubectl port-forward svc/frontend 3000:80 -n curso-local
+kubectl port-forward svc/frontend-service 3000:80 -n curso-local
 ```
 Luego abre `http://localhost:3000` en tu navegador.
 
@@ -41,7 +41,7 @@ Luego abre `http://localhost:3000` en tu navegador.
 ```bash
 kubectl exec -it <pod-frontend> -n curso-local -- sh
 # Dentro del pod:
-curl http://backend:8080/api/health
+curl http://backend-service:80
 ```
 
 ## Conceptos clave
