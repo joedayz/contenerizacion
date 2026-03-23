@@ -3,6 +3,9 @@ FROM alpine:3.18
 # Instalar herramientas necesarias
 RUN apk add --no-cache curl jq netcat-openbsd coreutils bash
 
+# Crear directorio para el script
+RUN mkdir -p /app
+
 # Generar script directamente en el contenedor (evita problemas de line endings)
 RUN cat > /app/config-service.sh <<'EOFSCRIPT'
 #!/bin/bash
