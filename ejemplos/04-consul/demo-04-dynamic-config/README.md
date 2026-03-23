@@ -90,14 +90,22 @@ Este script crea secretos en Vault. Ejemplo de comandos que ejecuta:
 | `vault kv put secret/demo04/api-keys weather-api="sk_prod_abc123xyz" payment-gateway="pk_live_def456uvw"` | `kubectl exec -n vault vault-0 -- vault kv put secret/demo04/api-keys weather-api="sk_prod_abc123xyz" payment-gateway="pk_live_def456uvw"` |
 | `vault kv put secret/demo04/jwt secret="super-secret-jwt-key" algorithm="HS256" expiration="3600"` | `kubectl exec -n vault vault-0 -- vault kv put secret/demo04/jwt secret="super-secret-jwt-key" algorithm="HS256" expiration="3600"` |
 
-### Paso 3: Desplegar Config Service
+### Paso 3: Construir y cargar imagen
+
+| Linux/macOS (bash) | Windows (PowerShell) |
+|-------------------|---------------------|
+| `./build-and-load.sh` | `.\build-and-load.ps1` |
+
+Este script construye la imagen Docker del config-service y la carga en Docker Desktop o Kind.
+
+### Paso 4: Desplegar Config Service
 
 | Linux/macOS (bash) | Windows (PowerShell) |
 |-------------------|---------------------|
 | `kubectl apply -f config-service.yaml` | `kubectl apply -f config-service.yaml` |
 | `kubectl port-forward svc/config-service 8085:8085` | `kubectl port-forward svc/config-service 8085:8085` |
 
-### Paso 4: Ver configuración actual
+### Paso 5: Ver configuración actual
 
 | Linux/macOS (bash) | Windows (PowerShell) |
 |-------------------|---------------------|
@@ -147,10 +155,7 @@ Este script crea secretos en Vault. Ejemplo de comandos que ejecuta:
 }
 ```
 
-### Paso 5: Cambiar configuración dinámicamente (sin reiniciar)
-
-**Port-forward a Consul:**
-
+### Paso 6: Cambiar configuración dinámicamente (sin reiniciar)
 | Linux/macOS (bash) | Windows (PowerShell) |
 |-------------------|---------------------|
 | `kubectl port-forward -n consul svc/consul-server 8500:8500` | `kubectl port-forward -n consul svc/consul-server 8500:8500` |
@@ -176,7 +181,7 @@ Este script crea secretos en Vault. Ejemplo de comandos que ejecuta:
 
 **Resultado**: ¡Los cambios se reflejan SIN reiniciar el pod!
 
-### Paso 6: Probar feature flags en acción
+### Paso 7: Probar feature flags en acción
 
 | Linux/macOS (bash) | Windows (PowerShell) |
 |-------------------|---------------------|
@@ -207,7 +212,7 @@ Este script crea secretos en Vault. Ejemplo de comandos que ejecuta:
 }
 ```
 
-### Paso 7: Observar recargas en los logs
+### Paso 8: Observar recargas en los logs
 
 | Linux/macOS (bash) | Windows (PowerShell) |
 |-------------------|---------------------|
