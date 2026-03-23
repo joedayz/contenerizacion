@@ -1,7 +1,8 @@
 # Script para configurar Vault para Demo 3 (PowerShell)
 # Configura autenticación Kubernetes y secretos de PostgreSQL
 
-$ErrorActionPreference = "Stop"
+# No detener el script en errores, los manejaremos manualmente
+$ErrorActionPreference = "Continue"
 
 Write-Host "=== Configurando Vault para Demo 3 ===" -ForegroundColor Cyan
 Write-Host ""
@@ -14,9 +15,15 @@ if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrEmpty($vaultPod)) {
 }
 
 Write-Host "1. Habilitando Kubernetes auth method..." -ForegroundColor Blue
-& kubectl exec -n vault $vaultPod -- vault auth enable kubernetes 2>&1 | Out-Null
+$authOutput = & kubectl exec -n vault $vaultPod -- vault auth enable kubernetes 2>&1
 if ($LASTEXITCODE -ne 0) {
-    Write-Host "⚠️  Kubernetes auth ya estaba habilitado" -ForegroundColor Yellow
+    if ($authOutput -like "*path is already in use*") {
+        Write-Host "⚠️  Kubernetes auth ya estaba habilitado" -ForegroundColor Yellow
+    } else {
+        Write-Host "⚠️  $authOutput" -ForegroundColor Yellow
+    }
+} else {
+    Write-Host "✅ Kubernetes auth habilitado" -ForegroundColor Green
 }
 
 Write-Host "2. Configurando Kubernetes auth..." -ForegroundColor Blue
