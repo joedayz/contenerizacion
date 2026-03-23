@@ -3,5 +3,9 @@ FROM alpine:3.18
 # Instalar herramientas necesarias
 RUN apk add --no-cache curl jq netcat-openbsd coreutils bash
 
+# Copiar script optimizado
+COPY config-service-optimized.sh /app/config-service.sh
+RUN chmod +x /app/config-service.sh
+
 # Script wrapper se creará en el pod desde config-service.yaml
 CMD ["/bin/sh"]

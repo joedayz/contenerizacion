@@ -56,37 +56,7 @@ spec:
         imagePullPolicy: IfNotPresent
         command:
           - /bin/bash
-          - -c
-          - |
-            echo "=== Config Service with Dynamic Configuration ==="
-            
-            # Esperar a que Vault inyecte los secretos
-            while [ ! -f /vault/secrets/apikeys.env ]; do
-              echo "Waiting for Vault to inject secrets..."
-              sleep 2
-            done
-            
-            echo "✅ Vault secrets injected"
-            
-            # Source secrets
-            source /vault/secrets/apikeys.env
-            source /vault/secrets/jwt.env
-            
-            echo "Starting Config Service on port 8085..."
-            echo "Consul KV prefix: demo04/config/"
-            
-            # URL de Consul
-            CONSUL_URL="http://consul-server.consul.svc.cluster.local:8500"
-            
-            # Función para obtener valor de Consul KV
-            consul_get() {
-              curl -s "$CONSUL_URL/v1/kv/demo04/config/$1?raw" 2>/dev/null || echo "not-set"
-            }
-            
-            # Servidor HTTP simple
-            while true; do
-              echo -ne "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nConnection: close\r\n\r\n{\"config\":{\"features\":{\"new-ui\":\"$(consul_get features/new-ui)\",\"analytics\":\"$(consul_get features/analytics)\",\"dark-mode\":\"$(consul_get features/dark-mode)\",\"beta-features\":\"$(consul_get features/beta-features)\"},\"ratelimit\":{\"requests-per-second\":\"$(consul_get ratelimit/requests-per-second)\",\"burst\":\"$(consul_get ratelimit/burst)\",\"enabled\":\"$(consul_get ratelimit/enabled)\"},\"cache\":{\"ttl\":\"$(consul_get cache/ttl)\",\"max-size\":\"$(consul_get cache/max-size)\",\"enabled\":\"$(consul_get cache/enabled)\"}},\"secrets\":{\"apiKeys\":{\"weatherApi\":\"${WEATHER_API_KEY:0:10}***\",\"paymentGateway\":\"${PAYMENT_GATEWAY_KEY:0:10}***\",\"mapsApi\":\"${MAPS_API_KEY:0:10}***\",\"analytics\":\"${ANALYTICS_ID}\"},\"jwt\":{\"algorithm\":\"$JWT_ALGORITHM\",\"expiration\":\"$JWT_EXPIRATION\",\"issuer\":\"$JWT_ISSUER\"}},\"metadata\":{\"lastUpdate\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",\"instance\":\"$(hostname)\",\"sources\":{\"config\":\"consul-kv\",\"secrets\":\"vault-agent-injector\"}}}\r\n" | nc -l -p 8085
-            done
+          - /app/config-service.sh
         ports:
         - containerPort: 8085
           name: http
