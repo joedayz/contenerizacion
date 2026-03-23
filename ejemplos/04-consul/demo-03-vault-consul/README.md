@@ -155,10 +155,10 @@ kubectl port-forward svc/api-gateway 8090:8090
 irm http://localhost:8090/api/users -Method POST -ContentType "application/json" -Body '{"name":"Alice","email":"alice@example.com"}'
 
 # 2. Listar usuarios
-irm http://localhost:8090/api/users
+irm http://localhost:8090/api/users | ConvertTo-Json -Depth 10
 
 # 3. Obtener usuario específico
-irm http://localhost:8090/api/users/1
+irm http://localhost:8090/api/users/1 | ConvertTo-Json -Depth 10
 
 # 4. Info de Consul discovery
 irm http://localhost:8090/api/discovery/info
