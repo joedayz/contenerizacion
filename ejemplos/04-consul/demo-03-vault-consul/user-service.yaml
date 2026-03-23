@@ -56,11 +56,11 @@ spec:
         # Vault Agent Injector annotations
         "vault.hashicorp.com/agent-inject": "true"
         "vault.hashicorp.com/role": "user-service-role"
-        "vault.hashicorp.com/agent-inject-secret-database-config.txt": "demo03/data/database"
+        "vault.hashicorp.com/agent-inject-secret-database-config.txt": "secret/data/demo03/database"
         
         # Template para formatear el secreto
         "vault.hashicorp.com/agent-inject-template-database-config.txt": |
-          {{- with secret "demo03/data/database" -}}
+          {{- with secret "secret/data/demo03/database" -}}
           export DB_USERNAME="{{ .Data.data.username }}"
           export DB_PASSWORD="{{ .Data.data.password }}"
           export DB_HOST="{{ .Data.data.host }}"
