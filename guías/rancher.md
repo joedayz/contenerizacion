@@ -7,6 +7,284 @@
 
 ---
 
+## 0. Instalación de RKE2 y Rancher en Ubuntu
+
+### 0.1 Requisitos del sistema
+
+**Para RKE2 (servidor):**
+- Ubuntu 20.04 o 22.04 LTS
+- Mínimo: 4 vCPU, 8 GB RAM, 50 GB disco
+- Recomendado: 8 vCPU, 16 GB RAM, 100 GB disco
+
+**Puertos necesarios:**
+- TCP 22 (SSH)
+- TCP 80, 443 (Rancher UI y API)
+- TCP 6443 (Kubernetes API)
+- TCP 9345 (RKE2 supervisor)
+- UDP 8472 (Canal/Flannel VXLAN)
+- TCP 10250 (Kubelet metrics)
+
+### 0.2 Instalar RKE2 en Ubuntu
+
+**1. Actualizar el sistema:**
+
+```bash
+sudo apt update && sudo apt upgrade -y
+```
+
+**2. Instalar RKE2 (versión estable):**
+
+```bash
+curl -sfL https://get.rke2.io | sudo sh -
+```
+
+**3. Habilitar y arrancar el servicio RKE2:**
+
+```bash
+sudo systemctl enable rke2-server.service
+sudo systemctl start rke2-server.service
+```
+
+**4. Verificar estado:**
+
+```bash
+sudo systemctl status rke2-server
+sudo journalctl -u rke2-server -f
+```
+
+Esperar hasta que todos los componentes estén en Running (~2-3 minutos).
+
+**5. Configurar kubectl:**
+
+```bash
+# Crear enlace simbólico de kubectl
+sudo ln -s /var/lib/rancher/rke2/bin/kubectl /usr/local/bin/kubectl
+
+# Configurar kubeconfig
+mkdir -p ~/.kube
+sudo cp /etc/rancher/rke2/rke2.yaml ~/.kube/config
+sudo chown $(id -u):$(id -g) ~/.kube/config
+chmod 600 ~/.kube/config
+
+# Verificar acceso
+kubectl get nodes
+```
+
+Deberías ver el nodo en estado `Ready`.
+
+**6. Verificar todos los pods del sistema:**
+
+```bash
+kubectl get pods -A
+```
+
+Todos los pods en `kube-system` deben estar en `Running`:
+- `etcd`
+- `kube-apiserver`
+- `kube-controller-manager`
+- `kube-scheduler`
+- `kube-proxy`
+- Canal/Flannel (CNI)
+- CoreDNS
+
+### 0.3 Instalar Helm
+
+```bash
+curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+helm version
+```
+
+### 0.4 Instalar cert-manager (prerequisito para Rancher)
+
+```bash
+# Agregar repositorio de cert-manager
+helm repo add jetstack https://charts.jetstack.io
+helm repo update
+
+# Instalar cert-manager con CRDs
+kubectl create namespace cert-manager
+
+helm install cert-manager jetstack/cert-manager \
+  --namespace cert-manager \
+  --set crds.enabled=true \
+  --version v1.13.0
+
+# Verificar instalación
+kubectl get pods -n cert-manager
+```
+
+Esperar a que los 3 pods estén en `Running`:
+- `cert-manager-xxxxx`
+- `cert-manager-cainjector-xxxxx`
+- `cert-manager-webhook-xxxxx`
+
+### 0.5 Instalar Rancher
+
+**1. Agregar repositorio de Rancher:**
+
+```bash
+helm repo add rancher-stable https://releases.rancher.com/server-charts/stable
+helm repo update
+```
+
+**2. Crear namespace para Rancher:**
+
+```bash
+kubectl create namespace cattle-system
+```
+
+**3. Instalar Rancher:**
+
+Opción A: **Con dominio propio** (recomendado para producción):
+
+```bash
+helm install rancher rancher-stable/rancher \
+  --namespace cattle-system \
+  --set hostname=rancher.midominio.com \
+  --set replicas=1 \
+  --set bootstrapPassword=admin123
+```
+
+Opción B: **Con IP pública** (para demos/desarrollo):
+
+```bash
+# Reemplaza IP_PUBLICA con la IP de tu VM
+helm install rancher rancher-stable/rancher \
+  --namespace cattle-system \
+  --set hostname=IP_PUBLICA.sslip.io \
+  --set replicas=1 \
+  --set bootstrapPassword=admin123
+```
+
+**Nota:** `sslip.io` es un servicio que resuelve `192.168.1.100.sslip.io` → `192.168.1.100` automáticamente, útil para pruebas.
+
+**4. Verificar instalación:**
+
+```bash
+kubectl -n cattle-system get pods
+kubectl -n cattle-system rollout status deploy/rancher
+```
+
+Esperar hasta que el pod `rancher-xxxxx` esté `Running` y `1/1 Ready`.
+
+**5. Obtener la URL de Rancher:**
+
+```bash
+echo "https://$(kubectl -n cattle-system get ingress rancher -o jsonpath='{.spec.rules[0].host}')"
+```
+
+### 0.6 Configuración inicial de Rancher
+
+**1. Acceder a la UI:**
+
+Abre en el navegador la URL obtenida en el paso anterior (ej: `https://rancher.midominio.com`).
+
+Si ves error de certificado SSL:
+- **Producción:** Configura un certificado válido con Let's Encrypt
+- **Demo/desarrollo:** Acepta el certificado autofirmado
+
+**2. Login inicial:**
+
+- Usuario: `admin`
+- Password: `admin123` (o el que configuraste en `bootstrapPassword`)
+
+**3. Cambiar password:**
+
+Rancher te pedirá cambiar el password en el primer login.
+
+**4. Confirmar URL del servidor:**
+
+Rancher te preguntará la URL desde donde se accederá. Confirma la URL mostrada.
+
+**5. Dashboard inicial:**
+
+Verás el dashboard con:
+- **local cluster**: El clúster RKE2 donde está instalado Rancher
+- Opción para crear o importar más clústeres
+
+### 0.7 Configurar firewall (opcional pero recomendado)
+
+```bash
+# Permitir SSH
+sudo ufw allow 22/tcp
+
+# Permitir HTTP/HTTPS (Rancher UI)
+sudo ufw allow 80/tcp
+sudo ufw allow 443/tcp
+
+# Permitir Kubernetes API
+sudo ufw allow 6443/tcp
+
+# Habilitar firewall
+sudo ufw enable
+sudo ufw status
+```
+
+### 0.8 Verificación final
+
+**1. Verificar acceso a Kubernetes desde Rancher:**
+
+En la UI de Rancher:
+- Click en `local` (el clúster RKE2)
+- Navegar a `Workloads` → `Pods`
+- Deberías ver todos los pods del sistema
+
+**2. Descargar kubeconfig desde Rancher:**
+
+- En la UI: `local` cluster → menú ⋮ → `Download KubeConfig`
+- Guardar localmente como `~/rancher-kubeconfig.yaml`
+
+**3. Probar acceso remoto:**
+
+```bash
+export KUBECONFIG=~/rancher-kubeconfig.yaml
+kubectl get nodes
+kubectl get pods -A
+```
+
+### 0.9 Troubleshooting común
+
+**Problema: Rancher pod en CrashLoopBackOff**
+
+```bash
+# Ver logs
+kubectl -n cattle-system logs -l app=rancher --tail=100
+
+# Verificar cert-manager
+kubectl get pods -n cert-manager
+kubectl -n cert-manager logs -l app=cert-manager --tail=50
+```
+
+**Problema: No puedo acceder a la UI (timeout)**
+
+```bash
+# Verificar que el Ingress está configurado
+kubectl -n cattle-system get ingress
+
+# Verificar que el Service está arriba
+kubectl -n cattle-system get svc rancher
+
+# Verificar firewall
+sudo ufw status
+```
+
+**Problema: Certificado SSL autofirmado en producción**
+
+```bash
+# Reinstalar Rancher con Let's Encrypt
+helm uninstall rancher -n cattle-system
+
+helm install rancher rancher-stable/rancher \
+  --namespace cattle-system \
+  --set hostname=rancher.midominio.com \
+  --set replicas=1 \
+  --set ingress.tls.source=letsEncrypt \
+  --set letsEncrypt.email=tu@email.com \
+  --set bootstrapPassword=admin123
+```
+
+---
+
 ## 1. ¿Qué es Rancher?
 
 **Rancher** es una plataforma de gestión de Kubernetes que permite:
@@ -143,21 +421,34 @@ Los ejemplos de la carpeta `ejemplos/02-kubernetes/` y `ejemplos/03-rancher/` se
 En la **Guía 04** veremos **HashiCorp Vault** para centralizar la gestión de información sensible (secretos) que luego consumirán las aplicaciones en Kubernetes.
 ---
 
-## 7. Entorno de demo: Rancher + K3s en una VM Ubuntu (profesor)
+## 7. Alternativa ligera: Rancher + K3s en una VM Ubuntu
+
+> **Nota:** La **instalación recomendada para el curso es RKE2** (ver sección 0). Esta sección muestra K3s como **alternativa más ligera** para demos rápidas o recursos limitados.
+
+**Diferencias K3s vs RKE2:**
+
+| Característica | K3s | RKE2 |
+|----------------|-----|------|
+| **Peso** | ~50 MB | ~200 MB |
+| **Uso de memoria** | ~512 MB | ~1-2 GB |
+| **Certificación** | IoT/Edge | Enterprise (FIPS 140-2) |
+| **Complejidad** | Muy simple | Producción-ready |
+| **Caso de uso** | Desarrollo, IoT | Producción enterprise |
 
 Para que el alumnado vea **Rancher gestionando un clúster real**, puedes levantar un entorno sencillo en la nube (por ejemplo AWS) con:
 
-- 1 VM Ubuntu 22.04 (4 vCPU, 8 GB RAM, 50–100 GB disco).
+- 1 VM Ubuntu 22.04 (2 vCPU, 4 GB RAM, 40 GB disco - requisitos mínimos para K3s).
 - Un clúster **K3s** instalado en esa VM.
 - **Rancher** desplegado dentro de ese K3s y expuesto por HTTPS.
 
 ### 7.1 Crear la VM (ejemplo AWS)
 
 - AMI: Ubuntu Server 22.04 LTS.
-- Tipo: `t3.medium` (mínimo) o `t3.large` (recomendado).
+- Tipo: `t3.small` (mínimo) o `t3.medium` (recomendado).
 - Security Group:
   - TCP 22 (SSH) desde tu IP.
   - TCP 80 y 443 desde `0.0.0.0/0` (acceso de los alumnos al panel de Rancher).
+  - TCP 6443 (Kubernetes API) - opcional, solo si quieres acceso directo con kubectl.
 
 ### 7.2 Instalar K3s en la VM
 
@@ -231,3 +522,77 @@ sudo k3s kubectl get pods -n cert-manager
     - Namespaces, Workloads, Services, Ingress, ConfigMaps, Secrets, etc.
 
 Opcionalmente, puedes descargar el `kubeconfig` desde Rancher y dárselo a los alumnos para que hagan `kubectl` contra ese clúster desde su máquina local (además de sus pruebas locales con Docker Desktop).
+
+---
+
+## 8. Resumen de instalación
+
+### Opción recomendada para el curso: RKE2 + Rancher
+
+```bash
+# 1. Instalar RKE2
+curl -sfL https://get.rke2.io | sudo sh -
+sudo systemctl enable rke2-server.service
+sudo systemctl start rke2-server.service
+
+# 2. Configurar kubectl
+sudo ln -s /var/lib/rancher/rke2/bin/kubectl /usr/local/bin/kubectl
+mkdir -p ~/.kube
+sudo cp /etc/rancher/rke2/rke2.yaml ~/.kube/config
+sudo chown $(id -u):$(id -g) ~/.kube/config
+
+# 3. Instalar Helm
+curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+
+# 4. Instalar cert-manager
+helm repo add jetstack https://charts.jetstack.io
+kubectl create namespace cert-manager
+helm install cert-manager jetstack/cert-manager \
+  --namespace cert-manager \
+  --set crds.enabled=true
+
+# 5. Instalar Rancher
+helm repo add rancher-stable https://releases.rancher.com/server-charts/stable
+kubectl create namespace cattle-system
+helm install rancher rancher-stable/rancher \
+  --namespace cattle-system \
+  --set hostname=TU_HOSTNAME \
+  --set replicas=1 \
+  --set bootstrapPassword=admin123
+
+# 6. Acceder a Rancher UI
+# https://TU_HOSTNAME (usuario: admin, password: admin123)
+```
+
+### Opción ligera para demos: K3s + Rancher
+
+Ver sección 7 para instalación con K3s (requisitos más bajos, ideal para laptops o VMs pequeñas).
+
+---
+
+## 9. Referencias
+
+- **RKE2 Documentación:** https://docs.rke2.io/
+- **Rancher Documentación:** https://ranchermanager.docs.rancher.com/
+- **K3s Documentación:** https://k3s.io/
+- **Helm Documentación:** https://helm.sh/docs/
+- **cert-manager:** https://cert-manager.io/docs/
+
+### Diferencias RKE2 vs K3s vs RKE1
+
+| | RKE2 | K3s | RKE1 |
+|---|------|-----|------|
+| **Tipo** | Binary install | Binary install | Docker-based |
+| **Certificación** | FIPS 140-2, CIS | Edge/IoT | Enterprise |
+| **Peso** | ~200 MB | ~50 MB | Depende de Docker |
+| **RAM mínima** | 8 GB | 512 MB | 4 GB |
+| **Caso de uso** | Producción enterprise | Desarrollo, Edge | Legacy (deprecado) |
+| **Soporte Rancher** | ✅ Full | ✅ Full | ⚠️ Limitado |
+
+**Recomendación para el curso:** RKE2 para entorno realista de producción.
+
+---
+
+## Siguiente paso
+
+En la **Guía 04** veremos **HashiCorp Vault** para centralizar la gestión de información sensible (secretos) que luego consumirán las aplicaciones en Kubernetes.
