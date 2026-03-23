@@ -27,12 +27,14 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 Write-Host "2. Configurando Kubernetes auth..." -ForegroundColor Blue
-$K8S_HOST = "https://kubernetes.default.svc:443"
 
-# Usar comillas simples para evitar expansión de PowerShell
-$configCmd = 'vault write auth/kubernetes/config token_reviewer_jwt="$(cat /var/run/secrets/kubernetes.io/serviceaccount/token)" kubernetes_host="https://kubernetes.default.svc:443" kubernetes_ca_cert="$(cat /var/run/secrets/kubernetes.io/serviceaccount/ca.crt)"'
-
-& kubectl exec -n vault $vaultPod -- sh -c $configCmd
+# Usar heredoc para evitar problemas de escape en PowerShell
+& kubectl exec -n vault $vaultPod -- sh -c @'
+vault write auth/kubernetes/config \
+  token_reviewer_jwt="$(cat /var/run/secrets/kubernetes.io/serviceaccount/token)" \
+  kubernetes_host="https://kubernetes.default.svc:443" \
+  kubernetes_ca_cert="$(cat /var/run/secrets/kubernetes.io/serviceaccount/ca.crt)"
+'@
 
 if ($LASTEXITCODE -ne 0) {
     Write-Host "❌ Error configurando Kubernetes auth" -ForegroundColor Red
