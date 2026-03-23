@@ -3,9 +3,132 @@ FROM alpine:3.18
 # Instalar herramientas necesarias
 RUN apk add --no-cache curl jq netcat-openbsd coreutils bash
 
-# Copiar script optimizado
-COPY config-service-optimized.sh /app/config-service.sh
+# Generar script directamente en el contenedor (evita problemas de line endings)
+RUN cat > /app/config-service.sh <<'EOFSCRIPT'
+#!/bin/bash
+set -e
+
+echo "=== Config Service with Dynamic Configuration (Optimized) ==="
+
+# Esperar a que Vault inyecte los secretos
+while [ ! -f /vault/secrets/apikeys.env ]; do
+  echo "Waiting for Vault to inject secrets..."
+  sleep 2
+done
+
+echo "✅ Vault secrets injected"
+
+# Source secrets
+source /vault/secrets/apikeys.env
+source /vault/secrets/jwt.env
+
+echo "Starting Config Service on port 8085..."
+echo "Consul KV prefix: demo04/config/"
+
+# URL de Consul
+CONSUL_URL="http://consul-server.consul.svc.cluster.local:8500"
+
+# Cache file
+CACHE_FILE="/tmp/consul-cache.json"
+touch "$CACHE_FILE"
+
+# Función para refrescar caché desde Consul (1 sola llamada HTTP)
+refresh_cache() {
+  while true; do
+    # Timestamp y hostname (obtener fuera del loop)
+    TIMESTAMP=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+    HOSTNAME=$(hostname)
+    
+    # Obtener TODAS las keys del prefix en 1 sola llamada y construir JSON completo en UNA pasada de jq
+    curl -s "$CONSUL_URL/v1/kv/demo04/config/?recurse" 2>/dev/null | \
+    jq -r --arg timestamp "$TIMESTAMP" \
+          --arg hostname "$HOSTNAME" \
+          --arg weather "${WEATHER_API_KEY:0:10}***" \
+          --arg payment "${PAYMENT_GATEWAY_KEY:0:10}***" \
+          --arg maps "${MAPS_API_KEY:0:10}***" \
+          --arg analytics "$ANALYTICS_ID" \
+          --arg jwt_algo "$JWT_ALGORITHM" \
+          --arg jwt_exp "$JWT_EXPIRATION" \
+          --arg jwt_iss "$JWT_ISSUER" \
+    '
+    # Función helper para obtener valor decodificado por key
+    def get_value($key): 
+      (.[] | select(.Key == $key) | .Value | @base64d) // "not-set";
+    
+    # Construir objeto completo
+    {
+      "config": {
+        "features": {
+          "new-ui": get_value("demo04/config/features/new-ui"),
+          "analytics": get_value("demo04/config/features/analytics"),
+          "dark-mode": get_value("demo04/config/features/dark-mode"),
+          "beta-features": get_value("demo04/config/features/beta-features")
+        },
+        "ratelimit": {
+          "requests-per-second": get_value("demo04/config/ratelimit/requests-per-second"),
+          "burst": get_value("demo04/config/ratelimit/burst"),
+          "enabled": get_value("demo04/config/ratelimit/enabled")
+        },
+        "cache": {
+          "ttl": get_value("demo04/config/cache/ttl"),
+          "max-size": get_value("demo04/config/cache/max-size"),
+          "enabled": get_value("demo04/config/cache/enabled")
+        }
+      },
+      "secrets": {
+        "apiKeys": {
+          "weatherApi": $weather,
+          "paymentGateway": $payment,
+          "mapsApi": $maps,
+          "analytics": $analytics
+        },
+        "jwt": {
+          "algorithm": $jwt_algo,
+          "expiration": $jwt_exp,
+          "issuer": $jwt_iss
+        }
+      },
+      "metadata": {
+        "lastUpdate": $timestamp,
+        "instance": $hostname,
+        "sources": {
+          "config": "consul-kv",
+          "secrets": "vault-agent-injector"
+        },
+        "cache": {
+          "enabled": true,
+          "refreshInterval": "2s"
+        }
+      }
+    }
+    ' > "$CACHE_FILE" 2>/dev/null || echo '{"error":"cache refresh failed"}' > "$CACHE_FILE"
+    
+    echo "[$(date)] Cache refreshed from Consul"
+    sleep 2
+  done
+}
+
+# Iniciar refresh de caché en background
+refresh_cache &
+
+# Esperar primer refresh
+sleep 1
+
+# Función para servir desde caché
+serve_http() {
+  while true; do
+    # Leer desde caché (NO hace llamadas a Consul)
+    RESPONSE=$(cat "$CACHE_FILE")
+    
+    # Servir respuesta HTTP
+    echo -ne "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nConnection: close\r\nCache-Control: no-cache\r\n\r\n$RESPONSE\r\n" | nc -l -p 8085
+  done
+}
+
+# Servir HTTP desde caché
+serve_http
+EOFSCRIPT
+
 RUN chmod +x /app/config-service.sh
 
-# Script wrapper se creará en el pod desde config-service.yaml
 CMD ["/bin/sh"]
