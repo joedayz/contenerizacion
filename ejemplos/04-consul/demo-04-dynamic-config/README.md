@@ -107,11 +107,11 @@ Este script construye la imagen Docker del config-service y la carga en Docker D
 
 ### Paso 5: Ver configuración actual
 
+**Ver configuración completa:**
+
 | Linux/macOS (bash) | Windows (PowerShell) |
 |-------------------|---------------------|
 | `curl http://localhost:8085/api/config` | `irm http://localhost:8085/api/config` |
-| `curl http://localhost:8085/api/config/features` | `irm http://localhost:8085/api/config/features` |
-| `curl http://localhost:8085/api/config/ratelimit` | `irm http://localhost:8085/api/config/ratelimit` |
 
 **Salida esperada**:
 
@@ -120,36 +120,77 @@ Este script construye la imagen Docker del config-service y la carga en Docker D
   "config": {
     "features": {
       "new-ui": "enabled",
-      "analytics": "disabled"
+      "analytics": "disabled",
+      "dark-mode": "enabled",
+      "beta-features": "disabled"
     },
     "ratelimit": {
       "requests-per-second": "100",
-      "burst": "20"
+      "burst": "20",
+      "enabled": "true"
     },
     "cache": {
       "ttl": "300",
-      "max-size": "1000"
-    },
-    "timeouts": {
-      "connect": "5s",
-      "read": "30s"
+      "max-size": "1000",
+      "enabled": "true"
     }
   },
   "secrets": {
     "apiKeys": {
-      "weather-api": "sk_prod_***",
-      "payment-gateway": "pk_live_***"
+      "weatherApi": "sk_prod_ab***",
+      "paymentGateway": "pk_live_de***",
+      "mapsApi": "AIzaSyBqVp***",
+      "analytics": "G-XXXXXXXXXX"
     },
     "jwt": {
       "algorithm": "HS256",
-      "expiration": "3600"
+      "expiration": "3600",
+      "issuer": "demo-app"
     }
   },
   "metadata": {
-    "lastUpdate": "2024-03-18T10:30:45Z",
-    "source": {
+    "lastUpdate": "2026-03-23T12:59:15Z",
+    "instance": "config-service-5847f87d4f-h8wjh",
+    "sources": {
       "config": "consul-kv",
-      "secrets": "vault"
+      "secrets": "vault-agent-injector"
+    }
+  }
+}
+```
+
+**Ver solo features:**
+
+| Linux/macOS (bash) | Windows (PowerShell) |
+|-------------------|---------------------|
+| `curl http://localhost:8085/api/config/features` | `irm http://localhost:8085/api/config/features` |
+
+```json
+{
+  "config": {
+    "features": {
+      "new-ui": "enabled",
+      "analytics": "disabled",
+      "dark-mode": "enabled",
+      "beta-features": "disabled"
+    }
+  }
+}
+```
+
+**Ver solo rate limiting:**
+
+| Linux/macOS (bash) | Windows (PowerShell) |
+|-------------------|---------------------|
+| `curl http://localhost:8085/api/config/ratelimit` | `irm http://localhost:8085/api/config/ratelimit` |
+
+```json
+{
+  "config": {
+    "ratelimit": {
+      "requests-per-second": "100",
+      "burst": "20",
+      "enabled": "true"
     }
   }
 }
