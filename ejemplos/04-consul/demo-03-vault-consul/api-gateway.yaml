@@ -29,7 +29,7 @@ spec:
           protocol: TCP
         env:
         - name: USER_SERVICE_URL
-          value: "http://user-service.service.consul:8080"
+          value: "http://user-service:8080"
         startupProbe:
           tcpSocket:
             port: 8090
