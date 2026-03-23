@@ -39,19 +39,17 @@ Write-Host "5. Creando integration secrets..." -ForegroundColor Blue
 Write-Host "✅ Integration secrets creados" -ForegroundColor Green
 
 Write-Host "6. Creando policy..." -ForegroundColor Blue
-$POLICY = @"
-# Permiso para leer todos los secretos de demo04
-path `"secret/data/demo04/*`" {
-  capabilities = [`"read`"]
+$POLICY = @'
+path "secret/data/demo04/*" {
+  capabilities = ["read"]
 }
 
-# Permiso para listar
-path `"secret/metadata/demo04/*`" {
-  capabilities = [`"list`"]
+path "secret/metadata/demo04/*" {
+  capabilities = ["list"]
 }
-"@
+'@
 
-& kubectl exec -n vault $vaultPod -- sh -c "echo '$POLICY' | vault policy write config-service-policy -"
+$POLICY | & kubectl exec -i -n vault $vaultPod -- vault policy write config-service-policy -
 Write-Host "✅ Policy creada" -ForegroundColor Green
 
 Write-Host "7. Creando role..." -ForegroundColor Blue
