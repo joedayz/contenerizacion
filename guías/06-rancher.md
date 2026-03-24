@@ -1,18 +1,18 @@
-# Guía 03 — Rancher
+# Guía 06 — Rancher
 
 ## Objetivos
 
-- Usar **Rancher** para gestionar uno o varios clústeres Kubernetes (incluidos RKE2).
+- Usar **Rancher** para gestionar uno o varios clústeres Kubernetes (incluidos K3s y RKE2).
 - Entender **roles**, **políticas** y **dashboards** para equipos y entornos.
 
 ---
 
-## 0. Instalación de RKE2 y Rancher en Ubuntu
+## 0. Instalación de K3s y Rancher en Ubuntu
 
 ### 0.1 Requisitos del sistema
 
-**Para RKE2 (servidor):**
-- Ubuntu 20.04 o 22.04 LTS
+**Para K3s (servidor):**
+- Ubuntu 24.04 LTS (también funciona en 22.04 LTS)
 - Mínimo: 4 vCPU, 8 GB RAM, 50 GB disco
 - Recomendado: 8 vCPU, 16 GB RAM, 100 GB disco
 
@@ -20,11 +20,11 @@
 - TCP 22 (SSH)
 - TCP 80, 443 (Rancher UI y API)
 - TCP 6443 (Kubernetes API)
-- TCP 9345 (RKE2 supervisor)
+- TCP 9345 (registro de nodos K3s, si se usan agentes)
 - UDP 8472 (Canal/Flannel VXLAN)
 - TCP 10250 (Kubelet metrics)
 
-### 0.2 Instalar RKE2 en Ubuntu
+### 0.2 Instalar K3s en Ubuntu
 
 **1. Actualizar el sistema:**
 
@@ -32,24 +32,24 @@
 sudo apt update && sudo apt upgrade -y
 ```
 
-**2. Instalar RKE2 (versión estable):**
+**2. Instalar K3s (versión estable):**
 
 ```bash
-curl -sfL https://get.rke2.io | sudo sh -
+curl -sfL https://get.k3s.io | sh -
 ```
 
-**3. Habilitar y arrancar el servicio RKE2:**
+**3. Habilitar y arrancar el servicio K3s:**
 
 ```bash
-sudo systemctl enable rke2-server.service
-sudo systemctl start rke2-server.service
+sudo systemctl enable k3s
+sudo systemctl start k3s
 ```
 
 **4. Verificar estado:**
 
 ```bash
-sudo systemctl status rke2-server
-sudo journalctl -u rke2-server -f
+sudo systemctl status k3s
+sudo journalctl -u k3s -f
 ```
 
 Esperar hasta que todos los componentes estén en Running (~2-3 minutos).
@@ -57,12 +57,9 @@ Esperar hasta que todos los componentes estén en Running (~2-3 minutos).
 **5. Configurar kubectl:**
 
 ```bash
-# Crear enlace simbólico de kubectl
-sudo ln -s /var/lib/rancher/rke2/bin/kubectl /usr/local/bin/kubectl
-
 # Configurar kubeconfig
 mkdir -p ~/.kube
-sudo cp /etc/rancher/rke2/rke2.yaml ~/.kube/config
+sudo cp /etc/rancher/k3s/k3s.yaml ~/.kube/config
 sudo chown $(id -u):$(id -g) ~/.kube/config
 chmod 600 ~/.kube/config
 
@@ -78,14 +75,12 @@ Deberías ver el nodo en estado `Ready`.
 kubectl get pods -A
 ```
 
-Todos los pods en `kube-system` deben estar en `Running`:
-- `etcd`
-- `kube-apiserver`
-- `kube-controller-manager`
-- `kube-scheduler`
-- `kube-proxy`
-- Canal/Flannel (CNI)
-- CoreDNS
+En un clúster K3s, en `kube-system` deben verse en `Running` al menos:
+- `coredns`
+- `metrics-server`
+- `local-path-provisioner`
+- Flannel (`svclb`/`helm-install` según versión)
+- Traefik (si no fue deshabilitado durante la instalación)
 
 ### 0.3 Instalar Helm
 
@@ -199,7 +194,7 @@ Rancher te preguntará la URL desde donde se accederá. Confirma la URL mostrada
 **5. Dashboard inicial:**
 
 Verás el dashboard con:
-- **local cluster**: El clúster RKE2 donde está instalado Rancher
+- **local cluster**: El clúster K3s donde está instalado Rancher
 - Opción para crear o importar más clústeres
 
 ### 0.7 Configurar firewall (opcional pero recomendado)
@@ -225,7 +220,7 @@ sudo ufw status
 **1. Verificar acceso a Kubernetes desde Rancher:**
 
 En la UI de Rancher:
-- Click en `local` (el clúster RKE2)
+- Click en `local` (el clúster K3s)
 - Navegar a `Workloads` → `Pods`
 - Deberías ver todos los pods del sistema
 
@@ -290,24 +285,24 @@ helm install rancher rancher-stable/rancher \
 **Rancher** es una plataforma de gestión de Kubernetes que permite:
 
 - **Varios clústeres** desde una misma consola (multi-cluster).
-- **Importar** clústeres existentes (por ejemplo RKE2) o **crear** nuevos.
+- **Importar** clústeres existentes (por ejemplo K3s o RKE2) o **crear** nuevos.
 - **Control de acceso**: usuarios, roles y políticas por clúster o por proyecto.
 - **Dashboards** y vistas unificadas (pods, workloads, logs, shell en contenedor).
 
-En el curso, Rancher será la “ventana” desde la que los alumnos verán y operarán el clúster RKE2.
+En el curso, Rancher será la “ventana” desde la que los alumnos verán y operarán el clúster K3s.
 
 ---
 
 ## 2. Gestión de clústeres
 
-- **Clusters**: lista de clústeres conectados (RKE2, EKS, GKE, etc.).
+- **Clusters**: lista de clústeres conectados (K3s, RKE2, EKS, GKE, etc.).
 - **Proyectos/Namespaces**: organización lógica dentro de un clúster (por equipo, entorno o aplicación).
 - Desde Rancher se pueden ver métricas, eventos y estado de los nodos.
 
 Flujo típico:
 
 1. Acceder a Rancher (URL y credenciales que proporcione el formador).
-2. Seleccionar el clúster (por ejemplo, el RKE2 del curso).
+2. Seleccionar el clúster (por ejemplo, el K3s del curso).
 3. Navegar por Namespaces, Workloads, Service Discovery, Config Maps/Secrets, etc.
 
 ---
@@ -343,12 +338,12 @@ Esto evita depender solo de `kubectl` y ayuda a explicar conceptos de forma visu
 
 ## 5. Práctica recomendada
 
-1. Conectar Rancher al clúster RKE2 (si no está ya conectado).
+1. Conectar Rancher al clúster K3s (si no está ya conectado).
 2. Crear un **proyecto** o **namespace** por alumno o por equipo.
 3. Asignar un **rol** de proyecto (por ejemplo “Member” o “Read-only” en otro proyecto).
 4. Pedir a los alumnos que desplieguen una aplicación desde la UI o con `kubectl` y que comprueben en el dashboard los recursos creados.
 
-Los ejemplos de la carpeta `ejemplos/02-kubernetes/` y `ejemplos/03-rancher/` se pueden desplegar y revisar desde Rancher.
+Los ejemplos de la carpeta `ejemplos/02-kubernetes/` y `ejemplos/06-rancher/` se pueden desplegar y revisar desde Rancher.
 
 ---
 
@@ -416,14 +411,20 @@ Los ejemplos de la carpeta `ejemplos/02-kubernetes/` y `ejemplos/03-rancher/` se
 
 ---
 
-## 6. Siguiente paso
+## 6. Ejemplo guiado del curso
 
-En la **Guía 04** veremos **HashiCorp Vault** para centralizar la gestión de información sensible (secretos) que luego consumirán las aplicaciones en Kubernetes.
+Para una práctica paso a paso de Rancher + K3s, usar el material en `ejemplos/06-rancher/`:
+
+1. Aplicar `namespace.yaml`, `deployment.yaml`, `service.yaml` e `ingress.yaml`.
+2. Validar Workloads y Service Discovery desde la UI de Rancher.
+3. Escalar el Deployment desde Rancher para observar cambios en tiempo real.
+4. Probar el Ingress y revisar logs de Pods.
+
 ---
 
-## 7. Alternativa ligera: Rancher + K3s en una VM Ubuntu
+## 7. Escenario cloud alternativo: Rancher + K3s en una VM Ubuntu
 
-> **Nota:** La **instalación recomendada para el curso es RKE2** (ver sección 0). Esta sección muestra K3s como **alternativa más ligera** para demos rápidas o recursos limitados.
+> **Nota:** La sección 0 ya usa K3s como ruta principal para el curso. Esta sección mantiene un escenario de VM cloud simplificado para laboratorio.
 
 **Diferencias K3s vs RKE2:**
 
@@ -437,13 +438,13 @@ En la **Guía 04** veremos **HashiCorp Vault** para centralizar la gestión de i
 
 Para que el alumnado vea **Rancher gestionando un clúster real**, puedes levantar un entorno sencillo en la nube (por ejemplo AWS) con:
 
-- 1 VM Ubuntu 22.04 (2 vCPU, 4 GB RAM, 40 GB disco - requisitos mínimos para K3s).
+- 1 VM Ubuntu 24.04 (2 vCPU, 4 GB RAM, 40 GB disco - requisitos mínimos para K3s).
 - Un clúster **K3s** instalado en esa VM.
 - **Rancher** desplegado dentro de ese K3s y expuesto por HTTPS.
 
 ### 7.1 Crear la VM (ejemplo AWS)
 
-- AMI: Ubuntu Server 22.04 LTS.
+- AMI: Ubuntu Server 24.04 LTS.
 - Tipo: `t3.small` (mínimo) o `t3.medium` (recomendado).
 - Security Group:
   - TCP 22 (SSH) desde tu IP.
@@ -527,18 +528,17 @@ Opcionalmente, puedes descargar el `kubeconfig` desde Rancher y dárselo a los a
 
 ## 8. Resumen de instalación
 
-### Opción recomendada para el curso: RKE2 + Rancher
+### Opción recomendada para el curso: K3s + Rancher
 
 ```bash
-# 1. Instalar RKE2
-curl -sfL https://get.rke2.io | sudo sh -
-sudo systemctl enable rke2-server.service
-sudo systemctl start rke2-server.service
+# 1. Instalar K3s
+curl -sfL https://get.k3s.io | sh -
+sudo systemctl enable k3s
+sudo systemctl start k3s
 
 # 2. Configurar kubectl
-sudo ln -s /var/lib/rancher/rke2/bin/kubectl /usr/local/bin/kubectl
 mkdir -p ~/.kube
-sudo cp /etc/rancher/rke2/rke2.yaml ~/.kube/config
+sudo cp /etc/rancher/k3s/k3s.yaml ~/.kube/config
 sudo chown $(id -u):$(id -g) ~/.kube/config
 
 # 3. Instalar Helm
@@ -564,9 +564,9 @@ helm install rancher rancher-stable/rancher \
 # https://TU_HOSTNAME (usuario: admin, password: admin123)
 ```
 
-### Opción ligera para demos: K3s + Rancher
+### Opción alternativa enterprise: RKE2 + Rancher
 
-Ver sección 7 para instalación con K3s (requisitos más bajos, ideal para laptops o VMs pequeñas).
+Si necesitas un enfoque más cercano a producción enterprise, usa RKE2 en lugar de K3s y conserva el resto del flujo (Helm, cert-manager y Rancher).
 
 ---
 
@@ -589,10 +589,6 @@ Ver sección 7 para instalación con K3s (requisitos más bajos, ideal para lapt
 | **Caso de uso** | Producción enterprise | Desarrollo, Edge | Legacy (deprecado) |
 | **Soporte Rancher** | ✅ Full | ✅ Full | ⚠️ Limitado |
 
-**Recomendación para el curso:** RKE2 para entorno realista de producción.
+**Recomendación para el curso:** K3s para laboratorio y formación guiada; RKE2 como extensión enterprise.
 
----
 
-## Siguiente paso
-
-En la **Guía 04** veremos **HashiCorp Vault** para centralizar la gestión de información sensible (secretos) que luego consumirán las aplicaciones en Kubernetes.
