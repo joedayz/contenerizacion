@@ -56,18 +56,42 @@ Esperar hasta que todos los componentes estén en Running (~2-3 minutos).
 
 **5. Configurar kubectl:**
 
+> **⚠️ IMPORTANTE:** Debes ejecutar estos comandos **en orden**. El paso de `sudo cp` es crítico; sin él, `kubectl` no podrá autenticarse con el clúster.
+
 ```bash
-# Configurar kubeconfig
+# 1. Crear el directorio para el kubeconfig
 mkdir -p ~/.kube
+
+# 2. COPIAR el archivo de configuración de K3s (NO omitir este paso)
 sudo cp /etc/rancher/k3s/k3s.yaml ~/.kube/config
+
+# 3. Cambiar el propietario al usuario actual
 sudo chown $(id -u):$(id -g) ~/.kube/config
+
+# 4. Ajustar permisos (solo lectura/escritura para el propietario)
 chmod 600 ~/.kube/config
 
-# Verificar acceso
+# 5. Verificar acceso al clúster
 kubectl get nodes
 ```
 
 Deberías ver el nodo en estado `Ready`.
+
+**Solución de problemas:**
+
+Si obtienes un error como `permission denied` en `/etc/rancher/k3s/k3s.yaml`:
+- Verifica que ejecutaste el comando `sudo cp` del paso 2
+- Si olvidaste copiarlo, ejecuta: `sudo cp /etc/rancher/k3s/k3s.yaml ~/.kube/config`
+- Luego repite los pasos 3 y 4
+
+Si `kubectl` no encuentra la configuración:
+```bash
+# Establecer explícitamente la ubicación del kubeconfig
+export KUBECONFIG=~/.kube/config
+echo 'export KUBECONFIG=~/.kube/config' >> ~/.bashrc  # para bash
+# o
+echo 'export KUBECONFIG=~/.kube/config' >> ~/.zshrc   # para zsh
+```
 
 **6. Verificar todos los pods del sistema:**
 
