@@ -1,494 +1,259 @@
-# Guía 06 — Rancher
+# Guía 06 — RKE2 + Rancher en Ubuntu
 
-## Objetivos
-
-- Usar **Rancher** para gestionar uno o varios clústeres Kubernetes (incluidos K3s y RKE2).
-- Entender **roles**, **políticas** y **dashboards** para equipos y entornos.
+> Basado en: https://github.com/gastonmartres/youtube/tree/main/rke2-rancher
 
 ---
 
-## 0. Instalación de K3s y Rancher en Ubuntu
+## 1. Instalación de RKE2 Server
 
-### 0.1 Requisitos del sistema
+El archivo de configuración principal de RKE2 es `config.yaml`. En las siguientes líneas veremos los distintos pasos y configuraciones necesarios para desplegar nuestro clúster de RKE2.
 
-**Para K3s (servidor):**
-- Ubuntu 24.04 LTS (también funciona en 22.04 LTS)
-- Mínimo: 4 vCPU, 8 GB RAM, 50 GB disco
-- Recomendado: 8 vCPU, 16 GB RAM, 100 GB disco
+### 1.1 Ubicación del archivo de configuración
 
-**Puertos necesarios:**
-- TCP 22 (SSH)
-- TCP 80, 443 (Rancher UI y API)
-- TCP 6443 (Kubernetes API)
-- TCP 9345 (registro de nodos K3s, si se usan agentes)
-- UDP 8472 (Canal/Flannel VXLAN)
-- TCP 10250 (Kubelet metrics)
-
-### 0.2 Instalar K3s en Ubuntu
-
-**1. Actualizar el sistema:**
-
-```bash
-sudo apt update && sudo apt upgrade -y
+```
+/etc/rancher/rke2/config.yaml
 ```
 
-**2. Instalar K3s (versión estable):**
+### 1.2 Generar el Token
+
+El token se usa para que los nodos puedan unirse al clúster:
 
 ```bash
-curl -sfL https://get.k3s.io | sh -
+head -c 16 /dev/urandom | sha256sum | awk '{print $1}'
 ```
 
-**3. Habilitar y arrancar el servicio K3s:**
-
-```bash
-sudo systemctl enable k3s
-sudo systemctl start k3s
+Ejemplo de resultado:
+```
+dc6801605649f15ff5fae878c6b8b8c0b783590c92d24b033a211229981da82c
 ```
 
-**4. Verificar estado:**
+Copia la cadena y guárdala en un editor para usarla más adelante.
+
+### 1.3 Crear el archivo de configuración
 
 ```bash
-sudo systemctl status k3s
-sudo journalctl -u k3s -f
+sudo mkdir -p /etc/rancher/rke2
+sudo nano /etc/rancher/rke2/config.yaml
 ```
 
-Esperar hasta que todos los componentes estén en Running (~2-3 minutos).
+Contenido del archivo:
 
-**5. Configurar kubectl:**
+```yaml
+write-kubeconfig-mode: "0644"
+etcd-snapshot-schedule-cron: "*/6 * * *"
+etcd-snapshot-retention: 56
+token: "TU_TOKEN_AQUI"
+tls-san:
+  - "rancher.example.com"
+cni:
+  - canal
+```
 
-> **⚠️ IMPORTANTE:** Debes ejecutar estos comandos **en orden**. El paso de `sudo cp` es crítico; sin él, `kubectl` no podrá autenticarse con el clúster.
+> Reemplaza `TU_TOKEN_AQUI` por el token generado en el paso anterior.
+
+### 1.4 Descargar RKE2 e iniciar el servicio
 
 ```bash
-# 1. Crear el directorio para el kubeconfig
-mkdir -p ~/.kube
+curl -sfL https://get.rke2.io | sh -
+```
 
-# 2. COPIAR el archivo de configuración de K3s (NO omitir este paso)
-sudo cp /etc/rancher/k3s/k3s.yaml ~/.kube/config
+Una vez descargado, habilitar e iniciar el servicio:
 
-# 3. Cambiar el propietario al usuario actual
-sudo chown $(id -u):$(id -g) ~/.kube/config
+```bash
+sudo systemctl enable --now rke2-server
+```
 
-# 4. Ajustar permisos (solo lectura/escritura para el propietario)
-chmod 600 ~/.kube/config
+> Este proceso puede tardar dependiendo de la velocidad de internet y el rendimiento de la máquina.
 
-# 5. Verificar acceso al clúster
+Verificar estado:
+
+```bash
+sudo systemctl status rke2-server
+```
+
+Ver logs en tiempo real si hay problemas:
+
+```bash
+journalctl -xeu rke2-server -f
+```
+
+---
+
+## 2. Instalar kubectl
+
+```bash
+curl -sLO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
+```
+
+La variable `KUBECONFIG` especifica la ubicación del archivo con las credenciales para acceder al clúster. El archivo se genera automáticamente al finalizar la instalación de `rke2-server`:
+
+```bash
+export KUBECONFIG=/etc/rancher/rke2/rke2.yaml
+```
+
+Para que persista en cada sesión:
+
+```bash
+echo 'export KUBECONFIG=/etc/rancher/rke2/rke2.yaml' >> ~/.bashrc
+source ~/.bashrc
+```
+
+Verificar el clúster:
+
+```bash
 kubectl get nodes
 ```
 
-Deberías ver el nodo en estado `Ready`.
-
-**Solución de problemas:**
-
-Si obtienes un error como `permission denied` en `/etc/rancher/k3s/k3s.yaml`:
-- Verifica que ejecutaste el comando `sudo cp` del paso 2
-- Si olvidaste copiarlo, ejecuta: `sudo cp /etc/rancher/k3s/k3s.yaml ~/.kube/config`
-- Luego repite los pasos 3 y 4
-
-Si `kubectl` no encuentra la configuración:
-```bash
-# Establecer explícitamente la ubicación del kubeconfig
-export KUBECONFIG=~/.kube/config
-echo 'export KUBECONFIG=~/.kube/config' >> ~/.bashrc  # para bash
-# o
-echo 'export KUBECONFIG=~/.kube/config' >> ~/.zshrc   # para zsh
+Ejemplo de salida:
+```
+NAME              STATUS   ROLES                       AGE   VERSION
+ea-ubuntu         Ready    control-plane,etcd,master   14d   v1.30.7+rke2r1
 ```
 
-**6. Verificar todos los pods del sistema:**
+Listar todos los pods en ejecución:
 
 ```bash
 kubectl get pods -A
 ```
 
-En un clúster K3s, en `kube-system` deben verse en `Running` al menos:
-- `coredns`
-- `metrics-server`
-- `local-path-provisioner`
-- Flannel (`svclb`/`helm-install` según versión)
-- Traefik (si no fue deshabilitado durante la instalación)
+> El modificador `-A` muestra todos los pods en todos los namespaces.
 
-### 0.3 Instalar Helm
+Ejemplo de salida:
+```
+NAMESPACE     NAME                                                   READY   STATUS      RESTARTS   AGE
+kube-system   cloud-controller-manager-ea-ubuntu                    1/1     Running     2          14d
+kube-system   etcd-ea-ubuntu                                        1/1     Running     1          14d
+kube-system   helm-install-rke2-canal-bthmt                         0/1     Completed   0          14d
+kube-system   helm-install-rke2-coredns-6mwk9                       0/1     Completed   0          14d
+kube-system   helm-install-rke2-ingress-nginx-c8kqr                 0/1     Completed   0          14d
+kube-system   kube-apiserver-ea-ubuntu                              1/1     Running     3          14d
+kube-system   kube-controller-manager-ea-ubuntu                     1/1     Running     2          14d
+kube-system   kube-proxy-ea-ubuntu                                  1/1     Running     1          14d
+kube-system   kube-scheduler-ea-ubuntu                              1/1     Running     1          14d
+kube-system   rke2-canal-nft4l                                      2/2     Running     2          14d
+kube-system   rke2-coredns-rke2-coredns-867d6d5c55-jpgjg            1/1     Running     1          14d
+kube-system   rke2-ingress-nginx-controller-8bk8k                   1/1     Running     1          14d
+kube-system   rke2-metrics-server-75866c5bb5-t6f62                  1/1     Running     1          14d
+```
+
+---
+
+## 3. Agregar un nodo Agente (Worker)
+
+### Diferencia entre Nodo Server y Nodo Agente
+
+**Nodo Server:**
+- Administra el estado del clúster y realiza tareas de control.
+- Aloja los componentes del plano de control: API Server, Controller Manager, Scheduler, etcd.
+
+**Nodo Agente:**
+- No aloja el plano de control.
+- Se conecta al nodo server para recibir instrucciones.
+- Solo ejecuta pods y gestiona la comunicación de red.
+
+| Función          | Nodo Server                          | Nodo Agente                              |
+|------------------|--------------------------------------|------------------------------------------|
+| Rol principal    | Gestionar el estado del clúster      | Ejecutar cargas de trabajo (pods)        |
+| Componentes      | API Server, etcd, Scheduler          | Kubelet, container runtime, kube-proxy   |
+| Almacena estado  | Sí, a través de etcd                 | No                                       |
+| Responsabilidad  | Administración y orquestación        | Ejecución de aplicaciones                |
+
+### 3.1 Crear el archivo de configuración del agente
+
+En el nodo agente:
 
 ```bash
-curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+sudo mkdir -p /etc/rancher/rke2
+sudo nano /etc/rancher/rke2/config.yaml
+```
+
+Contenido:
+
+```yaml
+server: https://IP_DEL_NODO_SERVER:9345
+write-kubeconfig-mode: "0644"
+token: "TU_TOKEN_AQUI"
+tls-san:
+  - "rancher.example.com"
+```
+
+Descripción de los parámetros:
+- `server`: IP o DNS del nodo server principal.
+- `write-kubeconfig-mode`: Permisos del archivo kubeconfig.
+- `token`: El mismo token configurado en el nodo server.
+- `tls-san`: Nombres adicionales en el certificado de RKE2.
+- `node-label`: (Opcional) Etiqueta para usar como `selector` en manifiestos.
+
+### 3.2 Instalar RKE2 en modo agente
+
+```bash
+curl -sfL https://get.rke2.io | INSTALL_RKE2_TYPE="agent" sh -
+```
+
+### 3.3 Habilitar e iniciar el agente
+
+```bash
+sudo systemctl enable --now rke2-agent
+```
+
+Ver logs si tarda más de 5 minutos o hay problemas:
+
+```bash
+journalctl -xeu rke2-agent -f
+```
+
+Verificar desde el nodo server:
+
+```bash
+kubectl get nodes
+```
+
+Ejemplo con varios nodos:
+```
+NAME              STATUS   ROLES                       AGE   VERSION
+ea-ubuntu-01      Ready    control-plane,etcd,master   19h   v1.31.4+rke2r1
+ea-ubuntu-02      Ready    <none>                      19h   v1.31.4+rke2r1
+ea-ubuntu-03      Ready    <none>                      19h   v1.31.4+rke2r1
+```
+
+---
+
+## 4. Instalación de Rancher
+
+### 4.1 Instalar Helm
+
+```bash
+curl -sLO https://get.helm.sh/helm-$(curl -L -s https://get.helm.sh/helm-latest-version)-linux-amd64.tar.gz
+tar zxvf helm-*-linux-amd64.tar.gz
+sudo install -o root -g root -m 0755 linux-amd64/helm /usr/local/bin/helm
+```
+
+Verificar:
+
+```bash
 helm version
 ```
 
-### 0.4 Instalar cert-manager (prerequisito para Rancher)
-
-```bash
-# Agregar repositorio de cert-manager
-helm repo add jetstack https://charts.jetstack.io
-helm repo update
-
-# Instalar cert-manager con CRDs
-kubectl create namespace cert-manager
-
-helm install cert-manager jetstack/cert-manager \
-  --namespace cert-manager \
-  --set crds.enabled=true \
-  --version v1.13.0
-
-# Verificar instalación
-kubectl get pods -n cert-manager
-```
-
-Esperar a que los 3 pods estén en `Running`:
-- `cert-manager-xxxxx`
-- `cert-manager-cainjector-xxxxx`
-- `cert-manager-webhook-xxxxx`
-
-### 0.5 Instalar Rancher
-
-**1. Agregar repositorio de Rancher:**
+### 4.2 Agregar el repositorio de Rancher
 
 ```bash
 helm repo add rancher-stable https://releases.rancher.com/server-charts/stable
 helm repo update
 ```
 
-**2. Crear namespace para Rancher:**
+### 4.3 Crear el namespace de Rancher
 
 ```bash
 kubectl create namespace cattle-system
 ```
 
-**3. Instalar Rancher:**
+### 4.4 Instalar cert-manager
 
-Opción A: **Con dominio propio** (recomendado para producción):
-
-```bash
-helm install rancher rancher-stable/rancher \
-  --namespace cattle-system \
-  --set hostname=rancher.midominio.com \
-  --set replicas=1 \
-  --set bootstrapPassword=admin123
-```
-
-Opción B: **Con IP pública** (para demos/desarrollo):
+Cert-manager automatiza la gestión de certificados TLS/SSL en el clúster (emisión, renovación y validación desde CAs como Let's Encrypt).
 
 ```bash
-# Reemplaza IP_PUBLICA con la IP de tu VM
-helm install rancher rancher-stable/rancher \
-  --namespace cattle-system \
-  --set hostname=IP_PUBLICA.sslip.io \
-  --set replicas=1 \
-  --set bootstrapPassword=admin123
-```
-
-**Nota:** `sslip.io` es un servicio que resuelve `192.168.1.100.sslip.io` → `192.168.1.100` automáticamente, útil para pruebas.
-
-**4. Verificar instalación:**
-
-```bash
-kubectl -n cattle-system get pods
-kubectl -n cattle-system rollout status deploy/rancher
-```
-
-Esperar hasta que el pod `rancher-xxxxx` esté `Running` y `1/1 Ready`.
-
-**5. Obtener la URL de Rancher:**
-
-```bash
-echo "https://$(kubectl -n cattle-system get ingress rancher -o jsonpath='{.spec.rules[0].host}')"
-```
-
-### 0.6 Configuración inicial de Rancher
-
-**1. Acceder a la UI:**
-
-Abre en el navegador la URL obtenida en el paso anterior (ej: `https://rancher.midominio.com`).
-
-Si ves error de certificado SSL:
-- **Producción:** Configura un certificado válido con Let's Encrypt
-- **Demo/desarrollo:** Acepta el certificado autofirmado
-
-**2. Login inicial:**
-
-- Usuario: `admin`
-- Password: `admin123` (o el que configuraste en `bootstrapPassword`)
-
-**3. Cambiar password:**
-
-Rancher te pedirá cambiar el password en el primer login.
-
-**4. Confirmar URL del servidor:**
-
-Rancher te preguntará la URL desde donde se accederá. Confirma la URL mostrada.
-
-**5. Dashboard inicial:**
-
-Verás el dashboard con:
-- **local cluster**: El clúster K3s donde está instalado Rancher
-- Opción para crear o importar más clústeres
-
-### 0.7 Configurar firewall (opcional pero recomendado)
-
-```bash
-# Permitir SSH
-sudo ufw allow 22/tcp
-
-# Permitir HTTP/HTTPS (Rancher UI)
-sudo ufw allow 80/tcp
-sudo ufw allow 443/tcp
-
-# Permitir Kubernetes API
-sudo ufw allow 6443/tcp
-
-# Habilitar firewall
-sudo ufw enable
-sudo ufw status
-```
-
-### 0.8 Verificación final
-
-**1. Verificar acceso a Kubernetes desde Rancher:**
-
-En la UI de Rancher:
-- Click en `local` (el clúster K3s)
-- Navegar a `Workloads` → `Pods`
-- Deberías ver todos los pods del sistema
-
-**2. Descargar kubeconfig desde Rancher:**
-
-- En la UI: `local` cluster → menú ⋮ → `Download KubeConfig`
-- Guardar localmente como `~/rancher-kubeconfig.yaml`
-
-**3. Probar acceso remoto:**
-
-```bash
-export KUBECONFIG=~/rancher-kubeconfig.yaml
-kubectl get nodes
-kubectl get pods -A
-```
-
-### 0.9 Troubleshooting común
-
-**Problema: Rancher pod en CrashLoopBackOff**
-
-```bash
-# Ver logs
-kubectl -n cattle-system logs -l app=rancher --tail=100
-
-# Verificar cert-manager
-kubectl get pods -n cert-manager
-kubectl -n cert-manager logs -l app=cert-manager --tail=50
-```
-
-**Problema: No puedo acceder a la UI (timeout)**
-
-```bash
-# Verificar que el Ingress está configurado
-kubectl -n cattle-system get ingress
-
-# Verificar que el Service está arriba
-kubectl -n cattle-system get svc rancher
-
-# Verificar firewall
-sudo ufw status
-```
-
-**Problema: Certificado SSL autofirmado en producción**
-
-```bash
-# Reinstalar Rancher con Let's Encrypt
-helm uninstall rancher -n cattle-system
-
-helm install rancher rancher-stable/rancher \
-  --namespace cattle-system \
-  --set hostname=rancher.midominio.com \
-  --set replicas=1 \
-  --set ingress.tls.source=letsEncrypt \
-  --set letsEncrypt.email=tu@email.com \
-  --set bootstrapPassword=admin123
-```
-
----
-
-## 1. ¿Qué es Rancher?
-
-**Rancher** es una plataforma de gestión de Kubernetes que permite:
-
-- **Varios clústeres** desde una misma consola (multi-cluster).
-- **Importar** clústeres existentes (por ejemplo K3s o RKE2) o **crear** nuevos.
-- **Control de acceso**: usuarios, roles y políticas por clúster o por proyecto.
-- **Dashboards** y vistas unificadas (pods, workloads, logs, shell en contenedor).
-
-En el curso, Rancher será la “ventana” desde la que los alumnos verán y operarán el clúster K3s.
-
----
-
-## 2. Gestión de clústeres
-
-- **Clusters**: lista de clústeres conectados (K3s, RKE2, EKS, GKE, etc.).
-- **Proyectos/Namespaces**: organización lógica dentro de un clúster (por equipo, entorno o aplicación).
-- Desde Rancher se pueden ver métricas, eventos y estado de los nodos.
-
-Flujo típico:
-
-1. Acceder a Rancher (URL y credenciales que proporcione el formador).
-2. Seleccionar el clúster (por ejemplo, el K3s del curso).
-3. Navegar por Namespaces, Workloads, Service Discovery, Config Maps/Secrets, etc.
-
----
-
-## 3. Roles y políticas
-
-Rancher extiende el RBAC de Kubernetes con sus propios **roles**:
-
-- **Administrador** del clúster: control total.
-- **Usuario de clúster**: puede crear proyectos y namespaces, según permisos.
-- **Usuario de proyecto**: solo ve y opera dentro de un proyecto (namespace o conjunto de namespaces).
-
-**Políticas** permiten restringir, por ejemplo:
-
-- Qué registries de imágenes están permitidos.
-- Qué tipos de recursos puede crear un usuario (Pods, Services, etc.).
-
-Para el curso suele bastar con 1–2 roles (admin y “desarrollador” o “operador”) para que los alumnos practiquen permisos.
-
----
-
-## 4. Dashboards
-
-- **Dashboard principal**: resumen del clúster (CPU, memoria, pods, nodos).
-- **Workloads**: Deployments, StatefulSets, DaemonSets, Jobs.
-- **Service Discovery**: Services e Ingress.
-- **Config & Storage**: ConfigMaps, Secrets, Persistent Volumes.
-- **Logs y Shell**: desde la UI se puede abrir un terminal en un contenedor y ver logs en tiempo real.
-
-Esto evita depender solo de `kubectl` y ayuda a explicar conceptos de forma visual.
-
----
-
-## 5. Práctica recomendada
-
-1. Conectar Rancher al clúster K3s (si no está ya conectado).
-2. Crear un **proyecto** o **namespace** por alumno o por equipo.
-3. Asignar un **rol** de proyecto (por ejemplo “Member” o “Read-only” en otro proyecto).
-4. Pedir a los alumnos que desplieguen una aplicación desde la UI o con `kubectl` y que comprueben en el dashboard los recursos creados.
-
-Los ejemplos de la carpeta `ejemplos/02-kubernetes/` y `ejemplos/06-rancher/` se pueden desplegar y revisar desde Rancher.
-
----
-
-### 5.1 Desplegar el ejemplo de la Guía 02 con `kubectl` (y verlo en Rancher)
-
-**Objetivo en clase:** usar **el mismo YAML** de la Guía 02, pero contra el clúster que Rancher gestiona, y luego revisar todo desde la UI.
-
-1. **Descargar kubeconfig desde Rancher**
-   - En la UI de Rancher: entrar al clúster → menú de opciones (⋮) → **Download KubeConfig**.
-   - Guardar el archivo, por ejemplo como `~/kubeconfig-curso.yaml`.
-
-2. **Apuntar `kubectl` a ese clúster**
-
-   ```bash
-   export KUBECONFIG=~/kubeconfig-curso.yaml
-   kubectl config get-contexts
-   kubectl get nodes
-   ```
-
-3. **Crear namespace para la demo**
-
-   ```bash
-   kubectl create namespace curso-rancher
-   kubectl get namespaces
-   ```
-
-4. **Aplicar los mismos manifests de `ejemplos/02-kubernetes/`**
-
-   Desde la raíz del repo del curso:
-
-   ```bash
-   kubectl apply -f ejemplos/02-kubernetes/demo-kafka-microservices.yaml -n curso-rancher
-   kubectl apply -f ejemplos/02-kubernetes/service.yaml -n curso-rancher
-   kubectl apply -f ejemplos/02-kubernetes/ingress.yaml -n curso-rancher   # si el clúster tiene Ingress Controller
-   ```
-
-5. **Revisar en Rancher (vista alumno)**
-   - En Rancher → seleccionar el clúster.
-   - Filtrar por namespace **`curso-rancher`**.
-   - Ir a:
-     - `Workloads` → ver el Deployment y los Pods del ejemplo.
-     - `Service Discovery` → ver el Service y el Ingress.
-     - `Logs` / `Execute Shell` sobre un Pod para mostrar debugging básico.
-
-### 5.2 Desplegar el mismo ejemplo pegando YAML en la UI de Rancher
-
-**Alternativa para clase** sin usar terminal de los alumnos (todo clic a clic en la web):
-
-1. En Rancher, seleccionar el clúster y el namespace `curso-rancher` (o crearlo desde la UI).
-2. **Deployment**:
-   - `Workloads` → `Deployments` → `Create`.
-   - Elegir la opción de **editar/pegar YAML**.
-   - Copiar el contenido de `ejemplos/02-kubernetes/deployment.yaml`.
-   - Verificar que el `namespace` es `curso-rancher` (en el YAML o en el selector de la UI).
-   - Guardar.
-3. **Service**:
-   - `Service Discovery` → `Services` → `Create`.
-   - Pestaña de **YAML**, pegar el contenido de `ejemplos/02-kubernetes/service.yaml`.
-   - Ajustar namespace si hace falta y crear.
-4. **Ingress**:
-   - `Service Discovery` → `Ingresses` → `Create`.
-   - Pestaña de **YAML`, pegar el contenido de `ejemplos/02-kubernetes/ingress.yaml` (con el host que uses en el entorno demo).
-   - Crear y comprobar en la lista de Ingress.
-5. Probar la aplicación desde el navegador apuntando al host/puerto que corresponda en tu entorno demo (por ejemplo, un Ingress con dominio público que resuelva a la VM donde corre el clúster).
-
----
-
-## 6. Ejemplo guiado del curso
-
-Para una práctica paso a paso de Rancher + K3s, usar el material en `ejemplos/06-rancher/`:
-
-1. Aplicar `namespace.yaml`, `deployment.yaml`, `service.yaml` e `ingress.yaml`.
-2. Validar Workloads y Service Discovery desde la UI de Rancher.
-3. Escalar el Deployment desde Rancher para observar cambios en tiempo real.
-4. Probar el Ingress y revisar logs de Pods.
-
----
-
-## 7. Escenario cloud alternativo: Rancher + K3s en una VM Ubuntu
-
-> **Nota:** La sección 0 ya usa K3s como ruta principal para el curso. Esta sección mantiene un escenario de VM cloud simplificado para laboratorio.
-
-**Diferencias K3s vs RKE2:**
-
-| Característica | K3s | RKE2 |
-|----------------|-----|------|
-| **Peso** | ~50 MB | ~200 MB |
-| **Uso de memoria** | ~512 MB | ~1-2 GB |
-| **Certificación** | IoT/Edge | Enterprise (FIPS 140-2) |
-| **Complejidad** | Muy simple | Producción-ready |
-| **Caso de uso** | Desarrollo, IoT | Producción enterprise |
-
-Para que el alumnado vea **Rancher gestionando un clúster real**, puedes levantar un entorno sencillo en la nube (por ejemplo AWS) con:
-
-- 1 VM Ubuntu 24.04 (2 vCPU, 4 GB RAM, 40 GB disco - requisitos mínimos para K3s).
-- Un clúster **K3s** instalado en esa VM.
-- **Rancher** desplegado dentro de ese K3s y expuesto por HTTPS.
-
-### 7.1 Crear la VM (ejemplo AWS)
-
-- AMI: Ubuntu Server 24.04 LTS.
-- Tipo: `t3.small` (mínimo) o `t3.medium` (recomendado).
-- Security Group:
-  - TCP 22 (SSH) desde tu IP.
-  - TCP 80 y 443 desde `0.0.0.0/0` (acceso de los alumnos al panel de Rancher).
-  - TCP 6443 (Kubernetes API) - opcional, solo si quieres acceso directo con kubectl.
-
-### 7.2 Instalar K3s en la VM
-
-Conectado por SSH como `ubuntu`:
-
-```bash
-sudo apt update && sudo apt upgrade -y
-curl -sfL https://get.k3s.io | sh -
-sudo k3s kubectl get nodes
-```
-
-### 7.3 Instalar Helm y cert-manager
-
-```bash
-curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.16.2/cert-manager.crds.yaml
 
 helm repo add jetstack https://charts.jetstack.io
 helm repo update
@@ -496,123 +261,94 @@ helm repo update
 helm install cert-manager jetstack/cert-manager \
   --namespace cert-manager \
   --create-namespace \
-  --set crds.enabled=true \
-  --kubeconfig /etc/rancher/k3s/k3s.yaml
+  --version v1.16.2
 ```
 
-Esperar a que los pods de `cert-manager` estén en `Running`:
+Verificar progreso:
 
 ```bash
-sudo k3s kubectl get pods -n cert-manager
+kubectl get pods -n cert-manager
 ```
 
-### 7.4 Instalar Rancher
+Todos los pods deben estar en estado `Running` antes de continuar.
 
-1. Añadir el repositorio de Rancher:
-
-   ```bash
-   helm repo add rancher-latest https://releases.rancher.com/server-charts/latest
-   helm repo update
-   ```
-
-2. Crear el namespace de Rancher:
-
-   ```bash
-   sudo k3s kubectl create namespace cattle-system
-   ```
-
-3. Instalar Rancher (cambia `TU_HOSTNAME` por un dominio o la IP pública):
-
-   ```bash
-   helm install rancher rancher-latest/rancher \
-     --namespace cattle-system \
-     --set hostname=TU_HOSTNAME \
-     --set replicas=1 \
-     --kubeconfig /etc/rancher/k3s/k3s.yaml
-   ```
-
-4. Esperar a que el pod de Rancher esté en `Running`:
-
-   ```bash
-   sudo k3s kubectl -n cattle-system get pods
-   ```
-
-### 7.5 Acceso del alumnado
-
-- Abrir en el navegador: `https://TU_HOSTNAME` (o `https://IP_PUBLICA` si no hay dominio).
-- La primera vez:
-  - Rancher te pedirá configurar la contraseña de `admin`.
-  - Después podrás compartir la URL con los alumnos para que vean:
-    - Lista de clústeres (en este caso, el K3s de demo).
-    - Namespaces, Workloads, Services, Ingress, ConfigMaps, Secrets, etc.
-
-Opcionalmente, puedes descargar el `kubeconfig` desde Rancher y dárselo a los alumnos para que hagan `kubectl` contra ese clúster desde su máquina local (además de sus pruebas locales con Docker Desktop).
-
----
-
-## 8. Resumen de instalación
-
-### Opción recomendada para el curso: K3s + Rancher
+### 4.5 Instalar Rancher
 
 ```bash
-# 1. Instalar K3s
-curl -sfL https://get.k3s.io | sh -
-sudo systemctl enable k3s
-sudo systemctl start k3s
+export FQDN="rancher.example.com"
+export RANCHERPASS="changeme"
 
-# 2. Configurar kubectl
-mkdir -p ~/.kube
-sudo cp /etc/rancher/k3s/k3s.yaml ~/.kube/config
-sudo chown $(id -u):$(id -g) ~/.kube/config
-
-# 3. Instalar Helm
-curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
-
-# 4. Instalar cert-manager
-helm repo add jetstack https://charts.jetstack.io
-kubectl create namespace cert-manager
-helm install cert-manager jetstack/cert-manager \
-  --namespace cert-manager \
-  --set crds.enabled=true
-
-# 5. Instalar Rancher
-helm repo add rancher-stable https://releases.rancher.com/server-charts/stable
-kubectl create namespace cattle-system
 helm install rancher rancher-stable/rancher \
   --namespace cattle-system \
-  --set hostname=TU_HOSTNAME \
-  --set replicas=1 \
-  --set bootstrapPassword=admin123
-
-# 6. Acceder a Rancher UI
-# https://TU_HOSTNAME (usuario: admin, password: admin123)
+  --set hostname=${FQDN} \
+  --set bootstrapPassword=${RANCHERPASS} \
+  --set global.cattle.psp.enabled=false
 ```
 
-### Opción alternativa enterprise: RKE2 + Rancher
+> La instalación puede tardar varios minutos según la velocidad de internet y el hardware.
 
-Si necesitas un enfoque más cercano a producción enterprise, usa RKE2 en lugar de K3s y conserva el resto del flujo (Helm, cert-manager y Rancher).
+Verificar progreso:
+
+```bash
+kubectl get pods -n cattle-system -w
+```
 
 ---
 
-## 9. Referencias
+## 5. Acceder a Rancher desde Windows con VirtualBox NAT
 
-- **RKE2 Documentación:** https://docs.rke2.io/
-- **Rancher Documentación:** https://ranchermanager.docs.rancher.com/
-- **K3s Documentación:** https://k3s.io/
-- **Helm Documentación:** https://helm.sh/docs/
-- **cert-manager:** https://cert-manager.io/docs/
+### 5.1 Regla de reenvío de puertos en VirtualBox
 
-### Diferencias RKE2 vs K3s vs RKE1
+En la VM → Configuración → Red → Adaptador 1 (NAT) → Reenvío de puertos:
 
-| | RKE2 | K3s | RKE1 |
-|---|------|-----|------|
-| **Tipo** | Binary install | Binary install | Docker-based |
-| **Certificación** | FIPS 140-2, CIS | Edge/IoT | Enterprise |
-| **Peso** | ~200 MB | ~50 MB | Depende de Docker |
-| **RAM mínima** | 8 GB | 512 MB | 4 GB |
-| **Caso de uso** | Producción enterprise | Desarrollo, Edge | Legacy (deprecado) |
-| **Soporte Rancher** | ✅ Full | ✅ Full | ⚠️ Limitado |
+| Nombre        | Protocolo | IP anfitrión | Puerto anfitrión | IP invitado | Puerto invitado |
+|---------------|-----------|--------------|------------------|-------------|-----------------|
+| Rancher-HTTPS | TCP       | 127.0.0.1    | 443             | 10.0.2.15   | 443             |
 
-**Recomendación para el curso:** K3s para laboratorio y formación guiada; RKE2 como extensión enterprise.
+### 5.2 Agregar entrada en el archivo hosts de Windows
 
+Abrir **PowerShell como Administrador** y ejecutar:
 
+```powershell
+Add-Content -Path "C:\Windows\System32\drivers\etc\hosts" -Value "127.0.0.1 rancher.example.com"
+```
+
+Verificar:
+
+```powershell
+Get-Content "C:\Windows\System32\drivers\etc\hosts" | Select-String "rancher"
+```
+
+Limpiar caché DNS:
+
+```cmd
+ipconfig /flushdns
+```
+
+En Edge/Chrome: `edge://net-internals/#dns` → **Clear host cache**
+
+### 5.3 Acceder a Rancher
+
+```
+https://rancher.example.com:8443
+```
+
+> Acepta la advertencia del certificado autofirmado. La contraseña inicial es `changeme` (o la que definiste en `RANCHERPASS`).
+
+---
+
+## 6. Verificación general
+
+```bash
+# Nodos del clúster
+kubectl get nodes
+
+# Pods de Rancher
+kubectl get pods -n cattle-system
+
+# Ingress de Rancher (hostname configurado)
+kubectl get ingress -n cattle-system
+
+# Servicios de Rancher
+kubectl get svc -n cattle-system
+```
