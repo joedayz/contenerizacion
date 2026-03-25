@@ -330,7 +330,7 @@ En Edge/Chrome: `edge://net-internals/#dns` → **Clear host cache**
 ### 5.3 Acceder a Rancher
 
 ```
-https://rancher.example.com:8443
+https://rancher.example.com
 ```
 
 > Acepta la advertencia del certificado autofirmado. La contraseña inicial es `changeme` (o la que definiste en `RANCHERPASS`).
